@@ -1,6 +1,7 @@
 import React from 'react';
 import { Phone, Upload } from 'lucide-react';
 import {StepProps} from "@/types/FormData";
+import Image from "next/image";
 
 const ContactInfoStep: React.FC<StepProps> = ({ formData, handleInputChange }) => {
     return (
@@ -28,10 +29,12 @@ const ContactInfoStep: React.FC<StepProps> = ({ formData, handleInputChange }) =
                     <div className="text-center">
                         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gray-50">
                             {formData.file ? (
-                                <img
+                                <Image
                                     src={URL.createObjectURL(formData.file)}
                                     alt="Profile preview"
                                     className="h-24 w-24 rounded-full object-cover"
+                                    width={100}
+                                    height={100}
                                 />
                             ) : (
                                 <Upload className="h-12 w-12 text-gray-400" />
