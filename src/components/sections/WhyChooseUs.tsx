@@ -59,8 +59,6 @@ export default function WhyChooseUs() {
                             fill
                             className="object-cover rounded-3xl"
                         />
-                        {/* Blue Decoration */}
-                        <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-[#9871ff] rounded-3xl" />
                     </div>
                 </div>
             </div>
