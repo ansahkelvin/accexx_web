@@ -2,6 +2,7 @@ import TopicCard from "@/components/card/TopicCard";
 import {Button} from "@/components/ui/button";
 import Image from "next/image";
 import {Check} from "lucide-react";
+import Link from "next/link";
 
 export default function MentalHealthSection() {
     const topics = [
@@ -87,8 +88,12 @@ export default function MentalHealthSection() {
                                 </div>
                             ))}
                         </div>
-                        <Button className="bg-[#9871ff] hover:bg-gray-800">
-                            Book Now
+                        <Button
+                            asChild
+                            className="bg-[#9871ff] hover:bg-gray-800">
+                            <Link href={"/login"}>
+                                Book Now
+                            </Link>
                         </Button>
                     </div>
 
