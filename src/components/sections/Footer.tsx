@@ -52,13 +52,12 @@ export default function Footer() {
     return (
         <footer className="w-full bg-gray-50">
             <div className="max-w-[2560px] mx-auto px-4 md:px-10 lg:px-24 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
-                    {/* Logo and Description */}
-                    <div className="lg:col-span-1">
-                        <div className="flex  mb-6">
-                           <Image src={"/background.png"} alt={"Logo"} width={256} height={156} />
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 mb-12">
+                    {/* Logo and Description - full width on mobile */}
+                    <div className="col-span-2 lg:col-span-1">
+                        <div className="flex mb-6">
+                            <Image src={"/background.png"} alt={"Logo"} width={256} height={156} />
                         </div>
-
                     </div>
 
                     {/* Navigation Columns */}

@@ -1,28 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { User, Phone, MapPin, Lock, Heart, Users, Activity, Shield } from 'lucide-react';
-import { RegistrationFormData, Step } from "@/types/FormData";
+import { useRegistrationForm } from '@/hooks/useRegistrationForm';
+import { Step } from '@/types/FormData';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import PersonalDetailsStep from "@/components/steps/patients/PersonalDetailsStep";
 import ContactInfoStep from "@/components/steps/patients/ContactInfoStep";
 import LocationStep from "@/components/steps/patients/LocationStep";
 import SecurityStep from "@/components/steps/patients/SecurityStep";
-import StepperHeader from "@/components/steps/patients/StepperHeader";
-import NavigationButtons from "@/components/steps/patients/NavigationButtons";
+
 
 const RegistrationStepper: React.FC = () => {
-    const [currentStep, setCurrentStep] = useState(1);
-    const [formData, setFormData] = useState<RegistrationFormData>({
-        name: '',
-        email: '',
-        dateOfBirth: '',
-        phoneNumber: '',
-        address: '',
-        latitude: '',
-        longitude: '',
-        file: null,
-        password: ''
-    });
+    const {
+        currentStep,
+        formData,
+        errors,
+        handleInputChange,
+        handleNext,
+        handlePrev,
+        handleSubmit
+    } = useRegistrationForm();
 
     const steps: Step[] = [
         {
@@ -47,37 +45,31 @@ const RegistrationStepper: React.FC = () => {
         }
     ];
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, files } = e.target;
-        if (name === 'file' && files) {
-            setFormData(prev => ({ ...prev, [name]: files[0] }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+    const renderError = (fieldName: string): React.ReactNode => {
+        if (errors[fieldName]) {
+            return (
+                <Alert variant="destructive" className="mt-2 border-none">
+                    <AlertDescription>{errors[fieldName]}</AlertDescription>
+                </Alert>
+            );
         }
+        return null;
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            console.log('Form submitted:', formData);
-            // API call would go here
-        } catch (error) {
-            console.error('Error submitting form:', error);
-        }
+    const stepProps = {
+        formData,
+        handleInputChange,
+        errors,
+        renderError
     };
 
     const renderStepContent = () => {
         switch (currentStep) {
-            case 1:
-                return <PersonalDetailsStep formData={formData} handleInputChange={handleInputChange} />;
-            case 2:
-                return <ContactInfoStep formData={formData} handleInputChange={handleInputChange} />;
-            case 3:
-                return <LocationStep formData={formData} handleInputChange={handleInputChange} />;
-            case 4:
-                return <SecurityStep formData={formData} handleInputChange={handleInputChange} />;
-            default:
-                return null;
+            case 1: return <PersonalDetailsStep {...stepProps} />;
+            case 2: return <ContactInfoStep {...stepProps} />;
+            case 3: return <LocationStep {...stepProps} />;
+            case 4: return <SecurityStep {...stepProps} />;
+            default: return null;
         }
     };
 
@@ -85,20 +77,16 @@ const RegistrationStepper: React.FC = () => {
         <div className="flex min-h-screen">
             {/* Left Side - Brand Section */}
             <div className="relative flex w-full flex-col justify-between bg-[#9871ff] p-6 text-white sm:p-8 lg:w-5/12 lg:p-12 xl:p-16">
-                {/* Decorative Elements */}
                 <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -left-1/4 top-1/4 h-1/3 w-1/3 rounded-full bg-white/10 sm:h-64 sm:w-64"></div>
-                    <div className="absolute -right-1/4 bottom-1/4 h-1/3 w-1/3 rounded-full bg-white/10 sm:h-80 sm:w-80"></div>
+                    <div className="absolute -left-1/4 top-1/4 h-1/3 w-1/3 rounded-full bg-white/10 sm:h-64 sm:w-64" />
+                    <div className="absolute -right-1/4 bottom-1/4 h-1/3 w-1/3 rounded-full bg-white/10 sm:h-80 sm:w-80" />
                 </div>
 
-                {/* Content */}
                 <div className="relative z-10">
-                    {/* Logo Area */}
                     <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 sm:mb-16 sm:h-12 sm:w-12">
                         <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </div>
 
-                    {/* Main Text */}
                     <div className="max-w-md">
                         <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
                             Healthcare Made Simple
@@ -139,26 +127,63 @@ const RegistrationStepper: React.FC = () => {
             {/* Right Side - Form Section */}
             <div className="flex-1 bg-gray-50 px-4 py-8 sm:px-6 sm:py-12 lg:py-12">
                 <div className="mx-auto w-full max-w-2xl">
-                    {/* Form Header */}
                     <div className="mb-6 text-center sm:mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Join Us</h2>
-                        <p className="mt-2 text-sm text-gray-600 sm:text-base">Complete your profile to get started</p>
+                        <p className="mt-2 text-sm text-gray-600 sm:text-base">
+                            Complete your profile to get started
+                        </p>
                     </div>
 
-                    {/* Form Container */}
                     <div className="overflow-hidden rounded-xl bg-white shadow-xl">
-                        <StepperHeader steps={steps} currentStep={currentStep} />
+                        {/* Stepper Header */}
+                        <div className="border-b border-gray-200 bg-gray-50 px-8 py-6">
+                            <div className="flex items-center justify-between">
+                                {steps.map((step, index) => (
+                                    <div key={step.title} className="flex flex-col items-center">
+                                        <div
+                                            className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-colors duration-200 ${
+                                                currentStep > index + 1
+                                                    ? 'border-[#9871ff] bg-[#9871ff] text-white'
+                                                    : currentStep === index + 1
+                                                        ? 'border-[#9871ff] text-[#9871ff]'
+                                                        : 'border-gray-300 text-gray-300'
+                                            }`}
+                                        >
+                                            <step.icon className="h-6 w-6" />
+                                        </div>
+                                        <p className="mt-2 text-sm font-medium text-gray-700">{step.title}</p>
+                                        <p className="mt-1 text-xs text-gray-500 text-center">{step.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
+                        {/* Form Content */}
                         <div className="p-4 sm:px-8 sm:py-6">
                             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                                 {renderStepContent()}
-                                <NavigationButtons
-                                    currentStep={currentStep}
-                                    stepsLength={steps.length}
-                                    onNext={() => setCurrentStep(prev => prev + 1)}
-                                    onPrev={() => setCurrentStep(prev => prev - 1)}
-                                    onSubmit={handleSubmit}
-                                />
+
+                                {/* Navigation Buttons */}
+                                <div className="flex items-center justify-between pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrev}
+                                        className={`flex items-center rounded-lg px-6 py-3 text-sm font-medium transition-colors ${
+                                            currentStep === 1
+                                                ? 'invisible'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        type={currentStep === steps.length ? 'submit' : 'button'}
+                                        onClick={currentStep === steps.length ? handleSubmit : handleNext}
+                                        className="flex items-center rounded-lg bg-[#9871ff] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#8b66ff]"
+                                    >
+                                        {currentStep === steps.length ? 'Complete Registration' : 'Continue'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>

@@ -1,53 +1,56 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
-import {StepProps} from "@/types/FormData";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { StepComponentProps } from '@/types/FormData';
 
-const LocationStep: React.FC<StepProps> = ({ formData, handleInputChange }) => {
-    return (
-        <div className="space-y-6">
-            <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700">Address</label>
-                <div className="mt-1 flex rounded-md shadow-sm">
-          <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500">
-            <MapPin className="h-5 w-5" />
-          </span>
-                    <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className="block w-full flex-1 rounded-none rounded-r-md border border-gray-300 px-3 py-2 focus:border-[#9871ff] focus:outline-none focus:ring-[#9871ff] sm:text-sm"
-                        placeholder="123 Medical Center Dr"
-                    />
-                </div>
+const LocationStep: React.FC<StepComponentProps> = ({ formData, handleInputChange, errors, renderError }) => (
+    <div className="space-y-6">
+        <div>
+            <Label htmlFor="address">Address</Label>
+            <div className="mt-1 flex rounded-md shadow-sm">
+                <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500">
+                    <MapPin className="h-5 w-5" />
+                </span>
+                <Input
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    className={`rounded-l-none ${errors.address ? "border-red-500" : ""}`}
+                    placeholder="123 Medical Center Dr"
+                />
             </div>
+            {renderError('address')}
+        </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                    <label className="block text-sm font-semibold text-gray-700">Latitude</label>
-                    <input
-                        type="text"
-                        name="latitude"
-                        value={formData.latitude}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#9871ff] focus:outline-none focus:ring-[#9871ff] sm:text-sm"
-                        placeholder="40.7128°"
-                    />
-                </div>
-                <div className="relative">
-                    <label className="block text-sm font-semibold text-gray-700">Longitude</label>
-                    <input
-                        type="text"
-                        name="longitude"
-                        value={formData.longitude}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#9871ff] focus:outline-none focus:ring-[#9871ff] sm:text-sm"
-                        placeholder="-74.0060°"
-                    />
-                </div>
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                    id="latitude"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleInputChange}
+                    className={errors.latitude ? "border-red-500" : ""}
+                    placeholder="40.7128°"
+                />
+                {renderError('latitude')}
+            </div>
+            <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                    id="longitude"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleInputChange}
+                    className={errors.longitude ? "border-red-500" : ""}
+                    placeholder="-74.0060°"
+                />
+                {renderError('longitude')}
             </div>
         </div>
-    );
-};
+    </div>
+);
 
 export default LocationStep;

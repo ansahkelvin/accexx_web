@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function NavLinks() {
     const pathName = usePathname();
     return (
-        <div className={cn("flex items-center gap-4 justify-center text-sm text-black font-medium")}>
+        <div className={cn("flex flex-col lg:flex-row items-center gap-4 justify-center text-sm text-black font-medium")}>
             {links.map((link, index) => (
                 <Link
                     className={cn(pathName === link.link ? "text-blue-900" : "", "text-sm")}
@@ -33,11 +33,7 @@ const links: iNavLinks[] = [
     },
     {
         title: "For Doctors",
-        link: "/doctors"
-    },
-    {
-        title: "For Patients",
-        link: "/doctors"
+        link: "/for-doctors"
     },
     {
         title: "FAQ",

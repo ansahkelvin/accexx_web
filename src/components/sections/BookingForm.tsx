@@ -10,18 +10,18 @@ export default function BookingForm() {
                     <span className="w-4 sm:w-5 h-4 sm:h-5 text-purple-600">⚕</span>
                     <span>General</span>
                 </button>
-                <button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">
-                    <span className="w-4 sm:w-5 h-4 sm:h-5">👶</span>
-                    <span>Pediatric</span>
-                </button>
-                <button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">
-                    <span className="w-4 sm:w-5 h-4 sm:h-5">🦷</span>
-                    <span>Dentist</span>
-                </button>
-                <button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">
-                    <span className="w-4 sm:w-5 h-4 sm:h-5">👂</span>
-                    <span>ENT Specialist</span>
-                </button>
+                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
+                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">👶</span>*/}
+                {/*    <span>Pediatric</span>*/}
+                {/*</button>*/}
+                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
+                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">🦷</span>*/}
+                {/*    <span>Dentist</span>*/}
+                {/*</button>*/}
+                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
+                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">👂</span>*/}
+                {/*    <span>ENT Specialist</span>*/}
+                {/*</button>*/}
             </div>
 
             {/* Form Fields */}
