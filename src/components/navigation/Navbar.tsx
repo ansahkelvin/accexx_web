@@ -2,6 +2,7 @@ import Image from "next/image";
 import NavLinks from "@/components/navigation/Navlinks";
 import {Button} from "@/components/ui/button";
 import {MenuIcon} from "lucide-react";
+import Link from "next/link";
 
 export default function Navbar() {
     return (
@@ -16,8 +17,13 @@ export default function Navbar() {
             </div>
 
             <div className="hidden lg:flex items-center gap-2">
-                <Button className="bg-[#9871ff]"> Register </Button>
-                <Button className="bg-white shadow-none outline-0 border text-[#9871ff] border-[#9871ff]"> Login </Button>
+                <Button asChild className="bg-[#9871ff]">
+                    <Link className="cursor-pointer" href={"/register"}>Register</Link></Button>
+                <Button
+                    asChild
+                    className="bg-white shadow-none outline-0 border hover:bg-white text-[#9871ff] border-[#9871ff]">
+                    <Link className="cursor-pointer" href={"/login"}>Login</Link>
+                </Button>
             </div>
 
             <div className={"text-lg flex lg:hidden"}>
