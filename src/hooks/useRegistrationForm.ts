@@ -89,12 +89,14 @@ export const useRegistrationForm = () => {
         if (validateStep(currentStep)) {
             try {
                 console.log('Form submitted:', formData);
-                // API call would go here
+
             } catch (error) {
                 console.error('Error submitting form:', error);
             }
         }
     };
+
+
 
     return {
         currentStep,
