@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function NavLinks() {
     const pathName = usePathname();
     return (
-        <div className={cn("flex flex-col lg:flex-row items-center gap-4 justify-center text-sm text-black font-medium")}>
+        <div className={cn("flex flex-col lg:flex-row items-center gap-8 lg:gap-4 justify-center lg:text-sm  text-lg text-black font-medium")}>
             {links.map((link, index) => (
                 <Link
                     className={cn(pathName === link.link ? "text-blue-900" : "", "text-sm")}

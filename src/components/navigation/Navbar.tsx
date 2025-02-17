@@ -7,7 +7,7 @@ import MobileMenu from "./MobileMenu"
 
 export default function Navbar() {
     return (
-        <div className="flex flex-row items-center border border-b-gray-100 fixed left-0 top-0 w-full bg-white z-50 h-20 justify-between px-5 py-3">
+        <div className="flex flex-row items-center border-b border-b-gray-100 fixed left-0 top-0 w-full bg-white z-50 h-20 justify-between px-5 py-3">
             {/*Logo*/}
             <div>
                 <Link href="/">
