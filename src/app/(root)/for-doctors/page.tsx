@@ -66,10 +66,10 @@ export default function ForDoctorsPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button className="bg-[#9871ff] text-white px-8 py-4 rounded-lg hover:bg-[#9871ff]/90 transition shadow-lg font-semibold">
-                                Sign Up as a Doctor
+                                Sign up as a Doctor
                             </button>
                             <button className="bg-white text-[#9871ff] px-8 py-4 rounded-lg border-2 border-[#9871ff] hover:bg-[#9871ff]/10 transition font-semibold">
-                                Watch Demo
+                               Go to dashboard
                             </button>
                         </div>
                     </div>

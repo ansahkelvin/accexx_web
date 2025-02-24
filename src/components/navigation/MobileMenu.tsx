@@ -42,12 +42,12 @@ export default function MobileMenu() {
 
                         <div className="flex flex-col gap-3 mt-auto mb-8">
                             <Button asChild className="w-full bg-[#9871ff] hover:bg-[#9871ff]/90">
-                                <Link href="/register">Register</Link>
+                                <Link href="/register">Register as patient</Link>
                             </Button>
                             <Button
                                 asChild
                                 className="w-full bg-white shadow-none outline-0 border hover:bg-[#9871ff]/10 text-[#9871ff] border-[#9871ff]">
-                                <Link href="/login">Login</Link>
+                                <Link href="/login">Login as patient</Link>
                             </Button>
                         </div>
                     </div>

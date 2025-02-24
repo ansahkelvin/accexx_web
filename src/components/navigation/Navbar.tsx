@@ -28,12 +28,12 @@ export default function Navbar() {
 
             <div className="hidden lg:flex items-center gap-2">
                 <Button asChild className="bg-[#9871ff] hover:bg-[#9871ff]/90">
-                    <Link href="/register">Register</Link>
+                    <Link href="/register">Register as patient</Link>
                 </Button>
                 <Button
                     asChild
                     className="bg-white shadow-none outline-0 border hover:bg-[#9871ff]/10 text-[#9871ff] border-[#9871ff]">
-                    <Link href="/login">Login</Link>
+                    <Link href="/login">Login as patient</Link>
                 </Button>
             </div>
 
