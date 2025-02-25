@@ -1,12 +1,15 @@
 import {ReactNode} from "react";
-import {LogoutButton} from "@/components/auth/logout-button";
+import Sidebar from "@/components/patient/navigation/Sidebar";
 
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
     return (
         <main>
-            <LogoutButton/>
-            {children}
+            <Sidebar/>
+            <div className="ml-64">
+                {children}
+            </div>
+
         </main>
     )
 }
