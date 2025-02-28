@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    env: {
-        GOOGLE_MAPS_API_KEY: 'AIzaSyAFFpnktsKFSbEjOPNvw8CggDzh25rWssM'
-    },
     images: {
         remotePatterns: [
             {
@@ -13,6 +10,12 @@ const nextConfig: NextConfig = {
             {
                 protocol: "https",
                 hostname: "plus.unsplash.com",
+            },
+            {
+                protocol: 'https',
+                hostname: 'randomuser.me',
+                port: '',
+                pathname: '/api/**',
             },
 
         ],

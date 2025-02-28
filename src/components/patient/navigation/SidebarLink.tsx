@@ -18,8 +18,11 @@ interface ILink {
     icon: React.ReactNode;
 }
 
+interface SidebarLinksProps {
+    isCollapsed?: boolean;
+}
 
-export default function SidebarLinks() {
+export default function SidebarLinks({ isCollapsed = false }: SidebarLinksProps) {
     const pathname = usePathname();
     const links : ILink[] = [
         {
@@ -38,8 +41,8 @@ export default function SidebarLinks() {
             icon: <Users className="w-5 h-5" />,
         },
         {
-            title: "Messages",
-            href: "/patients/messages",
+            title: "Inbox",
+            href: "/patients/inbox",
             icon: <MessageSquare className="w-5 h-5" />,
         },
         {
@@ -54,19 +57,21 @@ export default function SidebarLinks() {
         }
     ]
     return (
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-1">
             {links.map((link) => (
                 <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center space-x-3 px-4 py-4 mt-12 text-sm rounded-lg transition-colors ${
+                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} 
+                        py-3 ${isCollapsed ? 'mx-2' : 'mx-4'} text-sm rounded-lg transition-colors ${
                         pathname === link.href
-                            ? "bg-[#9871ff] text-white mx-4"
+                            ? "bg-[#9871ff] text-white"
                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
+                    title={isCollapsed ? link.title : ""}
                 >
                     {link.icon}
-                    <span>{link.title}</span>
+                    {!isCollapsed && <span>{link.title}</span>}
                 </Link>
             ))}
         </div>
