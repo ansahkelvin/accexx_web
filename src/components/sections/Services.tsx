@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 export default function Services() {
     const services = [
@@ -37,10 +38,13 @@ export default function Services() {
                         We provide a variety of services that can make it easier for you to fulfill your needs.
                     </p>
                     <Button
+                        asChild
                         variant="default"
                         className="bg-[#9871ff] hover:bg-blue-600 text-white rounded-full px-8"
                     >
-                        Learn More
+                        <Link href={"#choose-us"}>
+                            Learn More
+                        </Link>
                     </Button>
                 </div>
             </div>

@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function WhyChooseUs() {
     return (
-        <div className="w-full px-4 md:px-10 lg:px-24 py-16 max-w-[2560px] mx-auto">
+        <div id={"choose-us"} className="w-full px-4 md:px-10 lg:px-24 py-16 max-w-[2560px] mx-auto">
             {/* Top Section */}
             <div className="mb-24">
                 <h3 className="text-[#9871ff] font-medium mb-4">WHY CHOOSE US</h3>

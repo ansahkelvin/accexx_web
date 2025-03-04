@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Heart, Filter, Calendar, ChevronRight, User } from 'lucide-react';
+import { Search, MapPin, Star, Heart, Calendar, ChevronRight, User } from 'lucide-react';
 import Image from "next/image";
 
 // TypeScript interfaces

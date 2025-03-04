@@ -16,50 +16,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import {fetchPatientDashboard, fetchUserPatientDetails} from "@/app/actions/user";
 
-export default function DashboardPage() {
+export  default  async function DashboardPage() {
+    const user = await fetchUserPatientDetails();
+    const dashboard = await fetchPatientDashboard();
+
+    if (!dashboard || !user) {
+        return;
+    }
+    console.log(dashboard)
+    const upcomingAppointments = dashboard.upcoming_appointments;
+
+
+
     // Simple upcoming appointments
-    const upcomingAppointments = [
-        {
-            id: 1,
-            doctor: "Dr. Sarah Johnson",
-            specialty: "Cardiologist",
-            image: "/doctors/sarah-johnson.jpg",
-            date: "March 3, 2025",
-            time: "10:30 AM",
-            location: "Main Hospital, Room 305",
-            status: "confirmed"
-        },
-        {
-            id: 2,
-            doctor: "Dr. Michael Chen",
-            specialty: "Dermatologist",
-            image: "/doctors/michael-chen.jpg",
-            date: "March 15, 2025",
-            time: "2:00 PM",
-            location: "Medical Center, Floor 2",
-            status: "pending"
-        }
-    ];
 
     // Recent documents
-    const recentDocuments = [
-        { id: 1, name: "Medical History Form", type: "PDF", size: "1.2 MB", date: "Feb 20, 2025" },
-        { id: 2, name: "Insurance Information", type: "PDF", size: "0.8 MB", date: "Feb 18, 2025" },
-        { id: 3, name: "Prescription Details", type: "PDF", size: "0.5 MB", date: "Feb 10, 2025" }
-    ];
+    const recentDocuments = dashboard.recent_documents;
 
     // Notifications
-    const notifications = [
-        { id: 1, message: "Appointment reminder: Dr. Johnson tomorrow at 10:30 AM", time: "1 hour ago", isNew: true },
-        { id: 2, message: "Your lab results are now available", time: "Yesterday", isNew: true },
-        { id: 3, message: "Insurance verification complete", time: "3 days ago", isNew: false }
-    ];
+    const notifications = [];
 
     return (
         <>
             <div className="mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Welcome back, Alex</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Welcome back, {user?.name.split(" ")[0]}</h1>
                 <p className="text-gray-600 mt-1">Here&#39;s what&#39;s happening with your health today.</p>
             </div>
 
@@ -68,8 +50,13 @@ export default function DashboardPage() {
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white p-4 md:p-6 shadow-lg flex items-center justify-between">
                     <div>
                         <p className="text-blue-100 text-sm">Next Appointment</p>
-                        <h3 className="text-lg md:text-xl font-bold mt-1">March 3, 2025</h3>
-                        <p className="text-sm text-blue-100 mt-1">Dr. Sarah Johnson • 10:30 AM</p>
+                        <h3 className="text-lg md:text-xl font-bold mt-1">{new Date(dashboard.latest_appointment.appointment_time).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "numeric",
+                        })}</h3>
+                        <p className="text-sm text-blue-100 mt-1">{dashboard.latest_appointment.appointment_location}</p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
                         <Calendar className="h-6 md:h-8 w-6 md:w-8" />
@@ -79,7 +66,7 @@ export default function DashboardPage() {
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white p-4 md:p-6 shadow-lg flex items-center justify-between">
                     <div>
                         <p className="text-purple-100 text-sm">Upcoming Schedule</p>
-                        <h3 className="text-lg md:text-xl font-bold mt-1">2 Appointments</h3>
+                        <h3 className="text-lg md:text-xl font-bold mt-1">{dashboard.appointment_count} Appointments</h3>
                         <p className="text-sm text-purple-100 mt-1">For the next 30 days</p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
@@ -90,8 +77,13 @@ export default function DashboardPage() {
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white p-4 md:p-6 shadow-lg flex items-center justify-between md:col-span-1 col-span-full">
                     <div>
                         <p className="text-emerald-100 text-sm">Recent Documents</p>
-                        <h3 className="text-lg md:text-xl font-bold mt-1">3 Files</h3>
-                        <p className="text-sm text-emerald-100 mt-1">Last updated Feb 20, 2025</p>
+                        <h3 className="text-lg md:text-xl font-bold mt-1">{dashboard.file_counts}</h3>
+                        <p className="text-sm text-emerald-100 mt-1">{new Date(dashboard.recent_documents[0].updated_at).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "numeric",
+                        })}</p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
                         <FileText className="h-6 md:h-8 w-6 md:w-8" />
@@ -115,27 +107,34 @@ export default function DashboardPage() {
 
                         <div className="divide-y divide-gray-100">
                             {upcomingAppointments.map((appointment) => (
-                                <div key={appointment.id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition-colors">
+                                <div key={appointment.appointment_id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition-colors">
                                     <div className="flex items-center mb-4 md:mb-0">
-                                        <Avatar className="h-10 w-10 md:h-12 md:w-12 mr-3 md:mr-4">
-                                            <AvatarImage src={appointment.image} alt={appointment.doctor} />
-                                            <AvatarFallback>{appointment.doctor.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        <Avatar className="h-10 w-10 md:h-12 md:w-12 mr-3 md:mr-4 object-contain">
+                                            <AvatarImage className="object-cover" src={appointment.doctor.profile_image} alt={appointment.doctor.name} />
+                                            <AvatarFallback>{appointment.doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <h3 className="font-medium text-gray-900">{appointment.doctor}</h3>
-                                            <p className="text-sm text-gray-500">{appointment.specialty}</p>
+                                            <h3 className="font-medium text-gray-900">{appointment.doctor.name}</h3>
+                                            <p className="text-sm text-gray-500">{appointment.appointment_type.replace("_", " ").toLocaleUpperCase()}</p>
                                         </div>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-3 md:gap-4">
                                         <div className="flex items-center text-sm text-gray-600">
                                             <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                                            {appointment.date}
+                                            {new Date(appointment.appointment_time).toLocaleDateString(undefined, {
+                                                weekday: "short", // e.g., "Fri"
+                                                year: "numeric",  // e.g., "2025"
+                                                month: "long",    // e.g., "April"
+                                                day: "numeric",   // e.g., "4"
+                                            })}
                                         </div>
+
                                         <div className="flex items-center text-sm text-gray-600">
                                             <Clock className="h-4 w-4 mr-1 text-gray-400" />
-                                            {appointment.time}
+                                            {new Date(appointment.appointment_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                         </div>
+
                                         <Badge className={appointment.status === "confirmed" ? "bg-green-100 text-green-800 border border-green-200" : "bg-yellow-100 text-yellow-800 border border-yellow-200"}>
                                             {appointment.status === "confirmed" ? "Confirmed" : "Pending"}
                                         </Badge>
@@ -175,7 +174,12 @@ export default function DashboardPage() {
                                         </div>
                                         <div>
                                             <h3 className="font-medium text-gray-900">{document.name}</h3>
-                                            <p className="text-sm text-gray-500">{document.type} • {document.size} • {document.date}</p>
+                                            <p className="text-sm text-gray-500">{new Date(document.created_at).toLocaleDateString(undefined, {
+                                                weekday: "short",
+                                                year: "numeric",
+                                                month: "long",
+                                                day: "numeric",
+                                            })} • {new Date(document.created_at).toLocaleTimeString()}  </p>
                                         </div>
                                     </div>
                                     <Button variant="outline" size="sm" className="flex items-center self-end sm:self-auto">
@@ -242,24 +246,9 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-gray-100">
-                                {notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={`p-4 ${notification.isNew ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div className={`${notification.isNew ? 'text-blue-800' : 'text-gray-700'} font-medium`}>
-                                                {notification.message}
-                                            </div>
-                                            {notification.isNew && (
-                                                <Badge className="bg-blue-100 text-blue-800 border border-blue-200">
-                                                    New
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                                    </div>
-                                ))}
+                                <div className="py-10 text-center">
+                                    No notifications
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

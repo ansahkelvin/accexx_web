@@ -1,6 +1,8 @@
 import React from 'react';
 import { Calendar, DollarSign, Users, Clock, Star, BarChart, Shield, Laptop } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from "next/link";
+import {Button} from "@/components/ui/button";
 
 export default function ForDoctorsPage() {
     const benefits = [
@@ -65,11 +67,15 @@ export default function ForDoctorsPage() {
                             their practice with our innovative platform.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <button className="bg-[#9871ff] text-white px-8 py-4 rounded-lg hover:bg-[#9871ff]/90 transition shadow-lg font-semibold">
-                                Sign up as a Doctor
-                            </button>
+                            <Button asChild className="bg-[#9871ff] h-full text-white px-8 py-4 rounded-lg hover:bg-[#9871ff]/90 transition shadow-lg font-semibold">
+                                <Link href={"/auth/doctor/register"}>
+                                    Get Started Today
+                                </Link>
+                            </Button>
                             <button className="bg-white text-[#9871ff] px-8 py-4 rounded-lg border-2 border-[#9871ff] hover:bg-[#9871ff]/10 transition font-semibold">
-                               Go to dashboard
+                                <Link href={"/login/doctor"}>
+                                    Go to dashboard
+                                </Link>
                             </button>
                         </div>
                     </div>
@@ -175,9 +181,11 @@ export default function ForDoctorsPage() {
                         Join our network of healthcare professionals and experience the future
                         of medical practice management.
                     </p>
-                    <button className="bg-[#9871ff] text-white px-8 py-4 rounded-lg hover:bg-[#9871ff]/90 transition shadow-lg font-semibold">
-                        Get Started Now
-                    </button>
+                    <Button asChild className="bg-[#9871ff] h-full text-white px-8 py-4 rounded-lg hover:bg-[#9871ff]/90 transition shadow-lg font-semibold">
+                        <Link href={"/auth/doctor/register"}>
+                            Get Started
+                        </Link>
+                    </Button>
                 </div>
             </section>
         </div>

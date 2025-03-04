@@ -7,7 +7,7 @@ interface AuthResponse {
     access_token: string;
     token_type: string;
     refresh_token: string;
-    user_role: string;
+    user_role: "doctor" | "patient"; // Explicit role types
     user_id: string;
 }
 
@@ -28,32 +28,34 @@ export async function login(formData: FormData) {
         }
 
         const data: AuthResponse = await res.json();
+        const isProduction = process.env.NODE_ENV === "production";
+
 
         // Set secure HTTP-only cookies
         const cookieStore = await cookies();
         cookieStore.set('access_token', data.access_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24, // 24 hours
         });
 
         cookieStore.set('refresh_token', data.refresh_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
         cookieStore.set('user_id', data.user_id, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        cookieStore.set('user_role', data.user_id, {
+        cookieStore.set('user_role', data.user_role, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });

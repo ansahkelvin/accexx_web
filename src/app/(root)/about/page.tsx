@@ -2,6 +2,8 @@ import React from 'react';
 import { Users, Heart, Goal, Activity, Clock, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from "next/image";
+import Link from "next/link";
+import {Button} from "@/components/ui/button";
 
 export default function AboutPage() {
     const teamMembers = [
@@ -183,9 +185,13 @@ export default function AboutPage() {
                         Experience the future of healthcare scheduling and management.
                         Join thousands of satisfied patients and healthcare providers on our platform.
                     </p>
-                    <button className="bg-[#9871ff] text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition shadow-lg">
-                        Get Started Today
-                    </button>
+                    <Button
+                        asChild
+                        className="bg-[#9871ff] h-12 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition shadow-lg">
+                        <Link href={"/login"}>
+                            Get Started Today
+                        </Link>
+                    </Button>
                 </div>
             </section>
         </div>

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { User, MapPinned, Calendar, Lightbulb } from "lucide-react";
 import { FC } from 'react';
 import StepsCard, { StepCardProps } from "../card/StepsCard";
+import Link from "next/link";
 
 type Step = StepCardProps
 
@@ -52,8 +53,11 @@ const Steps: FC = () => {
                     <p className="text-sm max-w-sm">
                         Easily make an appointment with our best doctor for your families in the same day or next day
                     </p>
-                    <Button className="bg-white text-[#3B82F6] hover:bg-gray-100 shadow-none outline-0">
-                        Make an appointment
+                    <Button asChild
+                        className="bg-white text-[#3B82F6] hover:bg-gray-100 shadow-none outline-0">
+                        <Link href={"/login"}>
+                            Make an appointment
+                        </Link>
                     </Button>
                 </div>
             </section>

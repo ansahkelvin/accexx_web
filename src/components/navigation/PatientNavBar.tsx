@@ -1,8 +1,17 @@
 import { Input } from "@/components/ui/input";
 import { Bell, Search } from "lucide-react";
 import ProfileAvatar from "@/components/navigation/avatar";
+import {fetchUserPatientDetails} from "@/app/actions/user";
+import {redirect} from "next/navigation";
 
-export default function Navbar() {
+export default async function Navbar() {
+
+    const user = await fetchUserPatientDetails();
+
+    if(!user){
+        redirect("/")
+    }
+
     return (
         <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 justify-end flex lg:justify-between items-center">
 
@@ -24,7 +33,7 @@ export default function Navbar() {
                     </span>
                 </div>
                 <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
-                <ProfileAvatar />
+                <ProfileAvatar user={user} />
             </div>
         </div>
     );

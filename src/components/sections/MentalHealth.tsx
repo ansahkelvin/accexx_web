@@ -91,7 +91,7 @@ export default function MentalHealthSection() {
                         <Button
                             asChild
                             className="bg-[#9871ff] hover:bg-gray-800">
-                            <Link href={"/login"}>
+                            <Link href={"/register"}>
                                 Book Now
                             </Link>
                         </Button>
