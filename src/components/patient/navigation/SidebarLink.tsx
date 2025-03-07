@@ -58,22 +58,27 @@ export default function SidebarLinks({ isCollapsed = false }: SidebarLinksProps)
     ]
     return (
         <div className="flex flex-col space-y-1">
-            {links.map((link) => (
-                <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} 
+            {links.map((link) => {
+                // Simple exact match only
+                const isActive = pathname === link.href;
+
+                return (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3 px-4'} 
                         py-3 ${isCollapsed ? 'mx-2' : 'mx-4'} text-sm rounded-lg transition-colors ${
-                        pathname === link.href
-                            ? "bg-[#9871ff] text-white"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
-                    title={isCollapsed ? link.title : ""}
-                >
-                    {link.icon}
-                    {!isCollapsed && <span>{link.title}</span>}
-                </Link>
-            ))}
+                            isActive
+                                ? "bg-[#9871ff] text-white"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                        title={isCollapsed ? link.title : ""}
+                    >
+                        {link.icon}
+                        {!isCollapsed && <span>{link.title}</span>}
+                    </Link>
+                );
+            })}
         </div>
-    )
+    );
 }

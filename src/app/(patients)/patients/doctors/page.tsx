@@ -1,149 +1,82 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, MapPin, Star, Heart, Calendar, ChevronRight, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, MapPin, Star, ChevronRight, Award, Stethoscope } from 'lucide-react';
 import Image from "next/image";
+import {
+    fetchAllDoctors,
+    fetchNearbyDoctors,
+    fetchTopDoctors,
+} from "@/app/actions/user";
+import Link from "next/link";
+import {AllDoctor, NearbyDoctor, TopDoctor} from "@/types/types";
 
-// TypeScript interfaces
-interface Doctor {
-    id: number;
-    name: string;
-    specialty: string;
-    rating: number;
-    reviewCount: number;
-    image: string;
-    location: string;
-    distance?: string;
-    availability: string;
-    isRecommended?: boolean;
-    isHighRated?: boolean;
-    isNearYou?: boolean;
-    isFavorite: boolean;
-}
 
 export default function DoctorsPage() {
     // CSS for hiding scrollbars but enabling scroll
     const scrollbarHideStyles = `
-        .scrollbar-hide {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none; /* Chrome, Safari and Opera */
-        }
-    `;
+    .scrollbar-hide {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
+    }
+  `;
+    const [allDoctors, setAllDoctors] = useState<AllDoctor[]>([]);
+    const [topDoctors, setTopDoctors] = useState<TopDoctor[]>([]);
+    const [nearbyDoctors, setNearbyDoctors] = useState<NearbyDoctor[]>([]);
 
-    // Sample doctors data
-    const [doctors, setDoctors] = useState<Doctor[]>([
-        {
-            id: 1,
-            name: "Dr. Sarah Johnson",
-            specialty: "Cardiologist",
-            rating: 4.9,
-            reviewCount: 124,
-            image: "https://randomuser.me/api/portraits/women/45.jpg",
-            location: "Memorial Hospital",
-            distance: "1.2 miles",
-            availability: "Available today",
-            isRecommended: true,
-            isHighRated: true,
-            isNearYou: true,
-            isFavorite: false
-        },
-        {
-            id: 2,
-            name: "Dr. Michael Chen",
-            specialty: "Dermatologist",
-            rating: 4.8,
-            reviewCount: 98,
-            image: "https://randomuser.me/api/portraits/men/35.jpg",
-            location: "Skin Care Clinic",
-            distance: "0.8 miles",
-            availability: "Available tomorrow",
-            isRecommended: true,
-            isNearYou: true,
-            isFavorite: false
-        },
-        {
-            id: 3,
-            name: "Dr. Emily Wilson",
-            specialty: "Pediatrician",
-            rating: 4.7,
-            reviewCount: 156,
-            image: "https://randomuser.me/api/portraits/women/22.jpg",
-            location: "Children's Medical Center",
-            distance: "2.4 miles",
-            availability: "Available today",
-            isHighRated: true,
-            isFavorite: true
-        },
-        {
-            id: 4,
-            name: "Dr. James Martinez",
-            specialty: "Orthopedic Surgeon",
-            rating: 4.9,
-            reviewCount: 210,
-            image: "https://randomuser.me/api/portraits/men/42.jpg",
-            location: "Orthopedic Institute",
-            distance: "3.1 miles",
-            availability: "Next available: Mon",
-            isHighRated: true,
-            isFavorite: false
-        },
-        {
-            id: 5,
-            name: "Dr. Rebecca Lee",
-            specialty: "Neurologist",
-            rating: 4.6,
-            reviewCount: 87,
-            image: "https://randomuser.me/api/portraits/women/29.jpg",
-            location: "Neurology Center",
-            distance: "1.5 miles",
-            availability: "Available today",
-            isNearYou: true,
-            isFavorite: false
-        },
-        {
-            id: 6,
-            name: "Dr. David Kim",
-            specialty: "Family Medicine",
-            rating: 4.7,
-            reviewCount: 132,
-            image: "https://randomuser.me/api/portraits/men/64.jpg",
-            location: "Community Health Clinic",
-            distance: "0.7 miles",
-            availability: "Available today",
-            isRecommended: true,
-            isNearYou: true,
-            isFavorite: false
-        },
-        {
-            id: 7,
-            name: "Dr. Jennifer Taylor",
-            specialty: "Obstetrician",
-            rating: 4.8,
-            reviewCount: 178,
-            image: "https://randomuser.me/api/portraits/women/52.jpg",
-            location: "Women's Health Center",
-            distance: "2.8 miles",
-            availability: "Next available: Tue",
-            isHighRated: true,
-            isFavorite: false
-        },
-        {
-            id: 8,
-            name: "Dr. Robert Williams",
-            specialty: "Ophthalmologist",
-            rating: 4.5,
-            reviewCount: 91,
-            image: "https://randomuser.me/api/portraits/men/76.jpg",
-            location: "Vision Care Center",
-            distance: "1.9 miles",
-            availability: "Available tomorrow",
-            isRecommended: true,
-            isFavorite: false
-        }
-    ]);
+    // Loading states
+    const [isLoading, setIsLoading] = useState({
+        all: true,
+        top: true,
+        nearby: true
+    });
+
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                // Fetch all doctors
+                setIsLoading(prev => ({ ...prev, all: true }));
+                const allDoctorsData = await fetchAllDoctors();
+                if (allDoctorsData) {
+                    setAllDoctors(allDoctorsData.map(doctor => ({
+                        ...doctor,
+                        id: Math.random().toString(36).substring(2, 9), // Generate temporary ID
+                        isFavorite: false
+                    })));
+                }
+                setIsLoading(prev => ({ ...prev, all: false }));
+
+                // Fetch top doctors
+                setIsLoading(prev => ({ ...prev, top: true }));
+                const topDoctorsData = await fetchTopDoctors();
+                if (topDoctorsData) {
+                    setTopDoctors(topDoctorsData.map(doctor => ({
+                        ...doctor,
+                        id: Math.random().toString(36).substring(2, 9), // Generate temporary ID
+                    })));
+                }
+                setIsLoading(prev => ({ ...prev, top: false }));
+
+                // Fetch nearby doctors
+                setIsLoading(prev => ({ ...prev, nearby: true }));
+                const nearbyDoctorsData = await fetchNearbyDoctors();
+                if (nearbyDoctorsData) {
+                    setNearbyDoctors(nearbyDoctorsData.map(doctor => ({
+                        ...doctor,
+                    })));
+                }
+                setIsLoading(prev => ({ ...prev, nearby: false }));
+            } catch (error) {
+                console.error("Error fetching doctors:", error);
+                setIsLoading({ all: false, top: false, nearby: false });
+            }
+        };
+
+        fetchDoctors();
+    }, []);
 
     // Search state
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -151,86 +84,69 @@ export default function DoctorsPage() {
     // Selected specialty filter
     const [selectedSpecialty, setSelectedSpecialty] = useState<string>('All');
 
-    // Toggle favorite doctor
-    const toggleFavorite = (id: number) => {
-        setDoctors(doctors.map(doctor =>
-            doctor.id === id ? { ...doctor, isFavorite: !doctor.isFavorite } : doctor
-        ));
-    };
-
-    // Get unique specialties
-    const specialties = ['All', ...new Set(doctors.map(doctor => doctor.specialty))];
-
-    // Filter doctors based on categories
-    const recommendedDoctors = doctors.filter(doctor => doctor.isRecommended);
-    const nearYouDoctors = doctors.filter(doctor => doctor.isNearYou);
-    const highRatedDoctors = doctors.filter(doctor => doctor.isHighRated);
+    // Get unique specialties from all doctor lists
+    const allSpecialties = new Set([
+        ...allDoctors.map(doctor => doctor.specialization),
+        ...topDoctors.map(doctor => doctor.specialization),
+        ...nearbyDoctors.map(doctor => doctor.specialization)
+    ]);
+    const specialties = ['All', ...Array.from(allSpecialties)];
 
     // Filter doctors based on search and specialty
-    const filteredDoctors = doctors.filter(doctor => {
+    const filteredDoctors = allDoctors.filter(doctor => {
         const matchesSearch = searchTerm.trim() === '' ||
             doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.location.toLowerCase().includes(searchTerm.toLowerCase());
+            doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doctor.work_address.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesSpecialty = selectedSpecialty === 'All' || doctor.specialty === selectedSpecialty;
+        const matchesSpecialty = selectedSpecialty === 'All' ||
+            doctor.specialization === selectedSpecialty;
 
         return matchesSearch && matchesSpecialty;
     });
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen ">
             <style jsx global>{scrollbarHideStyles}</style>
-            {/* Header with background */}
-            <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-12">
-                <div className="max-w-6xl mx-auto px-4">
-                    <h1 className="text-3xl font-bold">Find Your Doctor</h1>
-                    <p className="mt-2 text-blue-100">Connect with trusted healthcare professionals tailored to your needs</p>
 
-                    {/* Search bar positioned at bottom of header */}
-                    <div className="mt-8 bg-white rounded-xl shadow-lg p-1 flex flex-col md:flex-row">
-                        <div className="relative flex-1 p-2">
-                            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            {/* Header with modern purple */}
+            <header className="bg-[#9871ff] py-6">
+                <div className="max-w-6xl mx-auto px-4">
+                    <h1 className="text-2xl font-medium text-white">Find Your Doctor</h1>
+
+                    {/* Search bar */}
+                    <div className="mt-6 flex gap-2">
+                        <div className="relative flex-1">
                             <input
                                 type="text"
-                                placeholder="Search doctors, specialties, conditions..."
+                                placeholder="Search doctors, specialties..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full py-3 pl-12 pr-4 rounded-lg bg-gray-50 border-0 focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                                className="w-full py-2 pl-10 pr-4 border border-white rounded bg-white text-gray-800 placeholder-gray-500"
                             />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
                         </div>
-                        <div className="border-l border-gray-200 hidden md:block"></div>
-                        <div className="relative flex-1 p-2">
-                            <MapPin className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Location (City or ZIP code)"
-                                className="w-full py-3 pl-12 pr-4 rounded-lg bg-gray-50 border-0 focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                            />
-                        </div>
-                        <div className="p-2">
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors w-full md:w-auto">
-                                Search
-                            </button>
-                        </div>
+                        <button className="bg-[#8461ee] text-white px-6 py-2 rounded border border-white hover:bg-[#7451de] transition-colors">
+                            Search
+                        </button>
                     </div>
                 </div>
             </header>
 
             {/* Main content */}
-            <main className="max-w-6xl mx-auto py-8 px-4">
-                {/* Quick filters */}
-                <div className="mb-8 overflow-x-auto">
+            <main className="max-w-6xl py-6 ">
+                {/* Specialty filters */}
+                <div className="mb-6 overflow-x-auto scrollbar-hide">
                     <div className="flex space-x-2 pb-2">
                         {specialties.map(specialty => (
                             <button
                                 key={specialty}
                                 onClick={() => setSelectedSpecialty(specialty)}
-                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium ${
+                                className={`whitespace-nowrap px-4 py-2 rounded text-sm font-medium transition-colors ${
                                     selectedSpecialty === specialty
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white text-gray-700 hover:bg-gray-100'
-                                } transition-colors shadow-sm`}
+                                        ? 'bg-[#9871ff] text-white shadow-md'
+                                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                                }`}
                             >
                                 {specialty}
                             </button>
@@ -238,55 +154,93 @@ export default function DoctorsPage() {
                     </div>
                 </div>
 
-                {/* Additional filters */}
-                <div className="bg-white rounded-xl shadow-sm p-4 mb-8 flex flex-wrap gap-4 items-center">
-                    <span className="font-medium text-gray-700">Filter by:</span>
-
-                    <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg text-gray-700 transition-colors cursor-pointer">
-                        <Calendar size={16} />
-                        <span className="text-sm">Availability</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg text-gray-700 transition-colors cursor-pointer">
-                        <Star size={16} />
-                        <span className="text-sm">Rating</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg text-gray-700 transition-colors cursor-pointer">
-                        <MapPin size={16} />
-                        <span className="text-sm">Distance</span>
-                    </div>
-
-                    <div className="ml-auto">
-                        <select className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>Sort by: Recommended</option>
-                            <option>Sort by: Highest Rated</option>
-                            <option>Sort by: Nearest</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* If search is active, show results */}
+                {/* If search is active, show results in a single column */}
                 {(searchTerm.trim() !== '' || selectedSpecialty !== 'All') && (
                     <div className="mb-8">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4">
+                        <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <Search size={18} className="mr-2 text-[#9871ff]" />
                             {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Doctor' : 'Doctors'} Found
                         </h2>
                         {filteredDoctors.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-6">
-                                {filteredDoctors.map(doctor => (
-                                    <DoctorCard
-                                        key={doctor.id}
-                                        doctor={doctor}
-                                        toggleFavorite={toggleFavorite}
-                                    />
-                                ))}
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {filteredDoctors.map((doctor) => (
+                                        <tr key={doctor.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="h-10 w-10 flex-shrink-0">
+                                                        <Image
+                                                            width={40}
+                                                            height={40}
+                                                            className="h-10 w-10 rounded-full object-cover"
+                                                            src={doctor.profile_image}
+                                                            alt={doctor.name}
+                                                        />
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-[#9871ff]">{doctor.specialization}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="flex mr-1">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star
+                                                                key={i}
+                                                                size={14}
+                                                                className={i < Math.floor(doctor.rating)
+                                                                    ? "text-[#ffc107] fill-[#ffc107]"
+                                                                    : "text-gray-300"}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-sm text-gray-500">
+                                                            ({doctor.rating_count})
+                                                        </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-500 flex items-center">
+                                                    <MapPin size={14} className="mr-1 text-[#9871ff]" />
+                                                    <span>{doctor.work_address}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
+                                                    Book
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-                                <User size={48} className="mx-auto text-gray-300 mb-3" />
-                                <p className="text-gray-700 font-medium">No doctors found matching your criteria</p>
-                                <p className="text-gray-500 mt-1">Try adjusting your filters or search terms</p>
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                                <p className="text-gray-700 mb-3">No doctors found matching your criteria</p>
+                                <button
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setSelectedSpecialty('All');
+                                    }}
+                                    className="bg-[#9871ff] text-white px-4 py-2 rounded text-sm hover:bg-[#8461ee] transition-colors"
+                                >
+                                    Clear Filters
+                                </button>
                             </div>
                         )}
                     </div>
@@ -295,70 +249,188 @@ export default function DoctorsPage() {
                 {/* Only show categories if not searching or filtering */}
                 {searchTerm.trim() === '' && selectedSpecialty === 'All' && (
                     <>
-                        {/* Recommended Doctors */}
-                        <section className="mb-12">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">Recommended for You</h2>
-                                <button className="flex items-center text-blue-600 font-medium hover:text-blue-700">
-                                    View all <ChevronRight size={18} className="ml-1" />
-                                </button>
-                            </div>
-                            <div className="flex overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
-                                <div className="flex gap-4">
-                                    {recommendedDoctors.map(doctor => (
-                                        <div key={doctor.id} className="w-full min-w-[340px] sm:min-w-[380px] max-w-lg flex-shrink-0">
-                                            <DoctorCard
-                                                doctor={doctor}
-                                                toggleFavorite={toggleFavorite}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Doctors Near You */}
-                        <section className="mb-12">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">Near You</h2>
-                                <button className="flex items-center text-blue-600 font-medium hover:text-blue-700">
-                                    View all <ChevronRight size={18} className="ml-1" />
-                                </button>
-                            </div>
-                            <div className="flex overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
-                                <div className="flex gap-4">
-                                    {nearYouDoctors.map(doctor => (
-                                        <div key={doctor.id} className="w-full min-w-[340px] sm:min-w-[380px] max-w-lg flex-shrink-0">
-                                            <DoctorCard
-                                                doctor={doctor}
-                                                toggleFavorite={toggleFavorite}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Highest Rated Doctors */}
+                        {/* Top Rated Doctors - Horizontal Scrolling */}
                         <section className="mb-8">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800">Highest Rated</h2>
-                                <button className="flex items-center text-blue-600 font-medium hover:text-blue-700">
-                                    View all <ChevronRight size={18} className="ml-1" />
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                                    <Award size={18} className="mr-2 text-[#9871ff]" />
+                                    Top Rated Doctors
+                                </h2>
+                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
+                                    View all <ChevronRight size={16} className="ml-1" />
                                 </button>
                             </div>
-                            <div className="flex overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
-                                <div className="flex gap-4">
-                                    {highRatedDoctors.map(doctor => (
-                                        <div key={doctor.id} className="w-full min-w-[340px] sm:min-w-[380px] max-w-lg flex-shrink-0">
-                                            <DoctorCard
-                                                doctor={doctor}
-                                                toggleFavorite={toggleFavorite}
-                                            />
+
+                            {isLoading.top ? (
+                                <div className="h-64 flex items-center justify-center">
+                                    <div className="animate-pulse flex space-x-4">
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                    </div>
+                                </div>
+                            ) : topDoctors.length > 0 ? (
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {topDoctors.map(doctor => (
+                                            <div key={doctor.id} className="min-w-[300px] max-w-[300px]">
+                                                <FeaturedDoctorCard
+                                                    doctor={doctor}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                                    <p className="text-gray-700">No top-rated doctors found</p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Nearby Doctors - Modern Grid */}
+                        <section className="mb-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                                    <MapPin size={18} className="mr-2 text-[#9871ff]" />
+                                    Doctors Near You
+                                </h2>
+                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
+                                    View all <ChevronRight size={16} className="ml-1" />
+                                </button>
+                            </div>
+
+                            {isLoading.nearby ? (
+                                <div className="h-64 flex items-center justify-center">
+                                    <div className="animate-pulse flex space-x-4">
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                    </div>
+                                </div>
+                            ) : nearbyDoctors.length > 0 ? (
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {nearbyDoctors.map(doctor => (
+                                            <div key={doctor.id} className="min-w-[350px] max-w-[280px]">
+                                                <NearbyDoctorCard
+                                                    doctor={doctor}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                                    <p className="text-gray-700">No nearby doctors found</p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* All Doctors - Table View */}
+                        <section className="mb-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                                    <Stethoscope size={18} className="mr-2 text-[#9871ff]" />
+                                    All Doctors
+                                </h2>
+                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
+                                    View all <ChevronRight size={16} className="ml-1" />
+                                </button>
+                            </div>
+
+                            {isLoading.all ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="animate-pulse rounded-lg bg-white shadow overflow-hidden">
+                                            <div className="grid grid-cols-12">
+                                                <div className="col-span-4 sm:col-span-3 bg-gray-200 h-36"></div>
+                                                <div className="col-span-8 sm:col-span-9 p-4">
+                                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-1/4 mb-4"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-2/4 mb-4"></div>
+                                                    <div className="flex justify-between items-center mt-4">
+                                                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                                                        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            ) : allDoctors.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        {allDoctors.slice(0, 3).map((doctor) => (
+                                            <tr key={doctor.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="h-10 w-10 flex-shrink-0">
+                                                            <Image
+                                                                width={40}
+                                                                height={40}
+                                                                className="h-10 w-10 rounded-full object-cover"
+                                                                src={doctor.profile_image}
+                                                                alt={doctor.name}
+                                                            />
+                                                        </div>
+                                                        <div className="ml-4">
+                                                            <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-[#9871ff]">{doctor.specialization}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="flex mr-1">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    size={14}
+                                                                    className={i < Math.floor(doctor.rating)
+                                                                        ? "text-[#ffc107] fill-[#ffc107]"
+                                                                        : "text-gray-300"}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-sm text-gray-500">
+                                                                ({doctor.rating_count})
+                                                            </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500 flex items-center">
+                                                        <MapPin size={14} className="mr-1 text-[#9871ff]" />
+                                                        <span>{doctor.work_address}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
+                                                        Book
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+                                    <p className="text-gray-700">No doctors found</p>
+                                </div>
+                            )}
                         </section>
                     </>
                 )}
@@ -367,86 +439,109 @@ export default function DoctorsPage() {
     );
 }
 
-// Doctor Card Component
-interface DoctorCardProps {
-    doctor: Doctor;
-    toggleFavorite: (id: number) => void;
+// Featured Doctor Card (for top doctors)
+interface FeaturedDoctorCardProps {
+    doctor: TopDoctor;
 }
 
-const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, toggleFavorite }) => {
+const FeaturedDoctorCard: React.FC<FeaturedDoctorCardProps> = ({ doctor }) => {
     return (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
-            <div className="p-6">
-                <div className="flex flex-col sm:flex-row">
-                    <div className="mb-4 sm:mb-0 sm:mr-5 flex justify-center">
-                        <Image
-                            width={90}
-                            height={90}
-                            src={doctor.image}
-                            alt={doctor.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover border-2 border-gray-100"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900">{doctor.name}</h3>
-                                <p className="text-indigo-600 font-medium">{doctor.specialty}</p>
-                                <div className="flex items-center mt-1">
-                                    <div className="flex">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star
-                                                key={i}
-                                                size={16}
-                                                className={i < Math.floor(doctor.rating)
-                                                    ? "text-yellow-400 fill-current"
-                                                    : "text-gray-300"}
-                                            />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm font-semibold ml-2">{doctor.rating}</span>
-                                    <span className="text-sm text-gray-500 ml-1">({doctor.reviewCount})</span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => toggleFavorite(doctor.id)}
-                                className="p-2 rounded-full hover:bg-gray-100"
-                                aria-label={doctor.isFavorite ? "Remove from favorites" : "Add to favorites"}
-                            >
-                                <Heart
-                                    className={doctor.isFavorite
-                                        ? "fill-red-500 text-red-500"
-                                        : "text-gray-400"}
-                                    size={22}
-                                />
-                            </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-2">
-                            <div className="flex items-center text-gray-600">
-                                <MapPin size={16} className="mr-2 text-gray-400 flex-shrink-0" />
-                                <span>{doctor.location}</span>
-                                {doctor.distance && (
-                                    <span className="ml-1 text-sm text-gray-500">• {doctor.distance}</span>
-                                )}
-                            </div>
-
-                            <div className="mt-auto pt-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
-                                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${
-                                    doctor.availability.includes('today')
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                    {doctor.availability}
-                                </span>
-                                <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg transition-colors shadow-sm">
-                                    Show Details
-                                </button>
-                            </div>
-                        </div>
+        <div className="rounded-lg bg-white shadow-sm border border-gray-100 overflow-hidden h-full">
+            {/* Card header */}
+            <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center">
+                    <Image
+                        width={48}
+                        height={48}
+                        src={doctor.profile_image}
+                        alt={doctor.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="ml-3">
+                        <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
+                        <p className="text-[#9871ff] text-sm">{doctor.specialization}</p>
                     </div>
                 </div>
             </div>
+
+            {/* Card body */}
+            <div className="p-4">
+                <div className="flex items-center mb-3">
+                    <div className="flex mr-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Star
+                                key={i}
+                                size={16}
+                                className={i < Math.floor(doctor.rating)
+                                    ? "text-[#ffc107] fill-[#ffc107]"
+                                    : "text-gray-200"}
+                            />
+                        ))}
+                    </div>
+                    <span className="text-sm text-gray-500">
+                        {doctor.rating.toFixed(1)}
+                    </span>
+                </div>
+
+                <div className="flex items-center text-sm text-gray-600 mb-3">
+                    <MapPin size={16} className="mr-2 text-[#9871ff]" />
+                    <span className="truncate">{doctor.work_address}</span>
+                </div>
+
+                {doctor.rating >= 4.8 && (
+                    <div className="bg-[#f8f4ff] text-[#9871ff] text-sm rounded p-2 flex items-center mb-3">
+                        <Award size={16} className="mr-2" />
+                        <span>Top Rated Doctor</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Card footer */}
+            <div className="p-4 mt-auto border-t border-gray-100">
+                <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
+                    Book Appointment
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Nearby Doctor Card Component
+interface NearbyDoctorCardProps {
+    doctor: NearbyDoctor;
+}
+
+const NearbyDoctorCard: React.FC<NearbyDoctorCardProps> = ({ doctor }) => {
+    return (
+        <div className="bg-white  border-amber-50 shadow ">
+        <Link
+            href={`/patients/doctors/${doctor.id}`}
+            className="rounded-lg  mx-2  shadow-sm  overflow-hidden">
+            <div className="flex  p-4">
+                <Image
+                    width={64}
+                    height={64}
+                    src={doctor.profile_image}
+                    alt={doctor.name}
+                    className="w-16 h-16 rounded-full object-cover border border-gray-100"
+                />
+                <div className="ml-4">
+                    <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
+                    <p className="text-[#9871ff] text-sm mb-2">{doctor.specialization}</p>
+
+                    <div className="flex items-center text-sm text-gray-600">
+                        <MapPin size={14} className="mr-1 text-[#9871ff]" />
+                        <span>{doctor.distance.toFixed(1)} km away</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="px-4 pb-4">
+                <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
+                    Book Appointment
+                </button>
+            </div>
+        </Link>
         </div>
     );
 };

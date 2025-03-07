@@ -11,6 +11,10 @@ export default function LoginPage(): JSX.Element {
         'use server'
 
         const result = await login(formData);
+        
+        if(result.success && result.data?.user_role == "doctor"){
+            redirect("/doctors/dashboard")
+        }
 
         if (result.success) {
             redirect('/patients');

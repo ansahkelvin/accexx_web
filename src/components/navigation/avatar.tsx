@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {User} from "@/app/actions/user";
+import {DoctorDetails, User} from "@/types/types";
 
-export default async function ProfileAvatar({ user }: { user: User}) {
+export default async function ProfileAvatar({ user }: { user: User | DoctorDetails}) {
 
         try{
         return (

@@ -77,13 +77,39 @@ body {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Remove all scrollbars */
+  * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+
+  /* Remove webkit scrollbars */
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure content still scrolls even when scrollbars are hidden */
+  /*body, div, section, article, aside, nav, main, header, footer {*/
+  /*  overflow-y: auto;*/
+  /*  overflow-x: auto;*/
+  /*}*/
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

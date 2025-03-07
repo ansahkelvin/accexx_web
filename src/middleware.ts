@@ -9,8 +9,7 @@ export async function middleware(request: NextRequest) {
 
     // Check if user is authenticated
     const isAuthenticated = !!accessToken;
-    console.log("Access Token", accessToken);
-    console.log("isAuthenticated", isAuthenticated);
+  
 
     // Handle expired or invalid token case
     if (isAuthenticated) {
