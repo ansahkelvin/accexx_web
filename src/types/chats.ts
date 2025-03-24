@@ -10,7 +10,7 @@ export interface Message {
         id: string;
         name: string;
         profile_image?: string;
-        user_type: 'doctor' | 'patient';
+        role: 'doctor' | 'patient';
     };
 }
 

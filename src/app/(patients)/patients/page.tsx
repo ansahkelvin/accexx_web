@@ -35,9 +35,6 @@ export  default  async function DashboardPage() {
     // Recent documents
     const recentDocuments = dashboard.recent_documents;
 
-    // Notifications
-    const notifications = [];
-
     return (
         <>
             <div className="mb-8">

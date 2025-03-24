@@ -1,8 +1,8 @@
 "use server"
 
-import { cookies } from "next/headers";
-import { BASE_URL } from "@/config/config";
-import { ChatRequest } from "@/types/chats";
+import {cookies} from "next/headers";
+import {BASE_URL} from "@/config/config";
+import {ChatRequest} from "@/types/chats";
 
 export async function createChat(chat: ChatRequest) {
     const cookieStore = await cookies();
@@ -87,8 +87,7 @@ export async function getUserChats() {
             throw new Error(`Failed to fetch chats: ${response.status}`);
         }
 
-        const data = await response.json();
-        return data;
+        return await response.json();
 
     } catch (err) {
         console.error("Error fetching chats:", err);
