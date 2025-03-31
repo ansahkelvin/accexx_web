@@ -3,6 +3,7 @@
 import {BASE_URL} from "@/config/config";
 import {cookies} from "next/headers";
 import {DoctorDetails} from "@/types/types";
+import {DoctorSchedules, IPatients} from "@/types/doctor";
 
 export interface Appointment {
     id: string;
@@ -46,7 +47,6 @@ export interface DoctorAppointment {
     patient_name: string;
     patient_image_url: string;
 }
-
 
 
 export const fetchDoctorDetails = async () => {
@@ -108,4 +108,111 @@ export const fetchAppointments = async () => {
     }
     const appointments: DoctorAppointment[] = await response.json();
     return appointments;
+}
+
+export const fetchDoctorSchedules = async () => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    
+    const endpoint = `${BASE_URL}/schedules/doctors/all`;
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+        }
+    })
+    if(!response.ok) {
+        return null;
+    }
+    
+    const schedules: DoctorSchedules[] = await response.json();
+    return schedules;
+    
+}
+
+export const createSchedule = async (schedule: DoctorSchedules) => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    const userId = cookieStore.get("user_id")?.value;
+    
+    
+    const endpoint = `${BASE_URL}/schedules/new`;
+    const response = await fetch(endpoint, {
+        body: JSON.stringify({...schedule, doctor_id: userId}),
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+        }
+    })
+    if(!response.ok) {
+        return null;
+    }
+    return response.json();
+}
+
+export const updateSchedule = async (schedule: DoctorSchedules) => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    
+    const endpoint = `${BASE_URL}/schedules/${schedule.id}`;
+    const response = await fetch(endpoint, {
+        method: "PUT",
+        body: JSON.stringify(schedule),
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+        }
+    })
+    
+    if (!response.ok) {
+        return null;
+    }
+    
+    return response.json();
+}
+
+export const deleteSchedule = async (schedule: DoctorSchedules) => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    console.log(schedule)
+    const endpoint = `${BASE_URL}/schedules/${schedule.id}`;
+    const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+        }
+    })
+    if(response.status !== 204) {
+        return null;
+    }
+    return "Deleted successfully.";
+}
+
+export const fetchDoctorPatient = async () => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    const endpoint = `${BASE_URL}/doctors/patients`;
+    
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+        }
+    })
+    
+    if(!response.ok) {
+        return null;
+    }
+    const patients : IPatients[] = await response.json();
+    return patients
+    
 }

@@ -1,5 +1,7 @@
 import React from 'react';
 import { MapPin, Calendar, User, Search } from 'lucide-react';
+import {Button} from "@/components/ui/button";
+import Link from "next/link";
 
 export default function BookingForm() {
     return (
@@ -10,18 +12,6 @@ export default function BookingForm() {
                     <span className="w-4 sm:w-5 h-4 sm:h-5 text-purple-600">⚕</span>
                     <span>General</span>
                 </button>
-                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
-                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">👶</span>*/}
-                {/*    <span>Pediatric</span>*/}
-                {/*</button>*/}
-                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
-                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">🦷</span>*/}
-                {/*    <span>Dentist</span>*/}
-                {/*</button>*/}
-                {/*<button className="flex items-center gap-2 text-gray-400 hover:text-purple-600 text-sm sm:text-base">*/}
-                {/*    <span className="w-4 sm:w-5 h-4 sm:h-5">👂</span>*/}
-                {/*    <span>ENT Specialist</span>*/}
-                {/*</button>*/}
             </div>
 
             {/* Form Fields */}
@@ -33,6 +23,7 @@ export default function BookingForm() {
                         <div className="flex flex-col">
                             <span className="text-xs text-gray-400">Location</span>
                             <input
+                                readOnly={true}
                                 type="text"
                                 placeholder="Enter location"
                                 defaultValue="London, England"
@@ -49,6 +40,7 @@ export default function BookingForm() {
                         <div className="flex flex-col">
                             <span className="text-xs text-gray-400">Appointment Date</span>
                             <input
+                                readOnly={true}
                                 type="text"
                                 placeholder="Select date"
                                 defaultValue="04 March 2025"
@@ -65,6 +57,7 @@ export default function BookingForm() {
                         <div className="flex flex-col">
                             <span className="text-xs text-gray-400">Who</span>
                             <input
+                                readOnly={true}
                                 type="text"
                                 placeholder="Select person"
                                 defaultValue="1 Adult"
@@ -75,10 +68,13 @@ export default function BookingForm() {
                 </div>
 
                 {/* Search Button */}
-                <button className="bg-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 hover:bg-purple-700 text-sm sm:text-base">
-                    <Search className="w-4 sm:w-5 h-4 sm:h-5" />
-                    Search
-                </button>
+                <Button
+                    className="bg-purple-600 text-white px-6 h-[58px] sm:px-8 py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 hover:bg-purple-700 text-sm sm:text-base">
+                    <Link className="flex gap-2 items-center" href={'/login'}>
+                        <Search className="w-4 sm:w-5 h-4 sm:h-5" />
+                        Search
+                    </Link>
+                </Button>
             </div>
         </div>
     );

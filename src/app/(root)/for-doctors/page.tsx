@@ -73,7 +73,7 @@ export default function ForDoctorsPage() {
                                 </Link>
                             </Button>
                             <button className="bg-white text-[#9871ff] px-8 py-4 rounded-lg border-2 border-[#9871ff] hover:bg-[#9871ff]/10 transition font-semibold">
-                                <Link href={"/login/doctor"}>
+                                <Link href={"/login"}>
                                     Go to dashboard
                                 </Link>
                             </button>

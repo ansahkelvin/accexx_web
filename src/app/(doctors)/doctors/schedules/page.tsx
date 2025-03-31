@@ -1,35 +1,32 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, X, Check, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+    Calendar,
+    Clock,
+    Plus,
+    X,
+    Check,
+    AlertCircle,
+    ChevronLeft,
+    ChevronRight,
+    TrashIcon
+} from 'lucide-react';
 import { format, isSameDay, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-
-// TypeScript interfaces
-interface Schedule {
-    id: string;
-    doctor_id: string;
-    start_time: string;
-    end_time: string;
-    is_booked: boolean;
-}
-
-interface ScheduleRequest {
-    doctor_id: string;
-    start_time: string;
-    end_time: string;
-    is_booked: boolean;
-}
+import { DoctorSchedules } from "@/types/doctor";
+import {createSchedule, deleteSchedule, fetchDoctorSchedules} from "@/service/doctors/doctor";
+import {Button} from "@/components/ui/button";
 
 interface TimeSlot {
     startTime: Date;
     endTime: Date;
-    isBooked?: boolean;
-    id?: string;
+    isBooked: boolean;
+    id: string;
 }
 
 export default function SchedulesPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [schedules, setSchedules] = useState<Schedule[]>([]);
+    const [schedules, setSchedules] = useState<DoctorSchedules[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreatingSchedule, setIsCreatingSchedule] = useState<boolean>(false);
@@ -43,148 +40,107 @@ export default function SchedulesPage() {
         date: format(new Date(), 'yyyy-MM-dd'),
     });
 
-    const doctorId = '123e4567-e89b-12d3-a456-426614174000'; // Would come from auth context in real app
-
-    // Mock schedules for demo - this would be replaced with API calls
-    const mockSchedules: Schedule[] = [
-        {
-            id: '1',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(9, 30, 0, 0)).toISOString(),
-            is_booked: true
-        },
-        {
-            id: '2',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(10, 30, 0, 0)).toISOString(),
-            is_booked: false
-        },
-        {
-            id: '3',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(11, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(11, 30, 0, 0)).toISOString(),
-            is_booked: false
-        },
-        {
-            id: '4',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(13, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(13, 30, 0, 0)).toISOString(),
-            is_booked: true
-        },
-        {
-            id: '5',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(14, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(14, 30, 0, 0)).toISOString(),
-            is_booked: false
-        },
-        {
-            id: '6',
-            doctor_id: doctorId,
-            start_time: new Date(new Date().setHours(15, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date().setHours(15, 30, 0, 0)).toISOString(),
-            is_booked: false
-        },
-        // Tomorrow's schedules
-        {
-            id: '7',
-            doctor_id: doctorId,
-            start_time: new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setHours(9, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setHours(9, 30, 0, 0)).toISOString(),
-            is_booked: false
-        },
-        {
-            id: '8',
-            doctor_id: doctorId,
-            start_time: new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setHours(10, 0, 0, 0)).toISOString(),
-            end_time: new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setHours(10, 30, 0, 0)).toISOString(),
-            is_booked: true
+    // Fix the addMinutes function to handle overnight time slots properly
+    const addMinutes = (time: string, minutesToAdd: number) => {
+        // Check if time is a valid string in HH:mm format
+        if (!time || !time.includes(':')) {
+            return '';
         }
-    ];
 
-    // Fetch schedules - this would use actual API in production
-    useEffect(() => {
-        const fetchSchedules = async () => {
-            setIsLoading(true);
-            try {
-                // In a real app, this would be an API call
-                // const response = await fetch(`/api/schedules?doctor_id=${doctorId}`);
-                // if (!response.ok) throw new Error('Failed to fetch schedules');
-                // const data = await response.json();
-                // setSchedules(data);
+        const [hours, minutes] = time.split(":").map(Number);
 
-                // Using mock data for demo
-                setTimeout(() => {
-                    setSchedules(mockSchedules);
-                    setIsLoading(false);
-                }, 500);
-            } catch (error) {
-                console.error(error);
-                setError('Failed to load schedules. Please try again.');
-                setIsLoading(false);
+        // Make sure hours and minutes are valid numbers
+        if (isNaN(hours) || isNaN(minutes)) {
+            return '';
+        }
+
+        // Create a date object using the current date (just for time calculation)
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+
+        // Add the specified number of minutes
+        date.setMinutes(date.getMinutes() + minutesToAdd);
+
+        // Format back to "HH:mm" for the time input field
+        // Use padStart to ensure 2 digits for hours and minutes
+        const resultHours = date.getHours().toString().padStart(2, '0');
+        const resultMinutes = date.getMinutes().toString().padStart(2, '0');
+
+        return `${resultHours}:${resultMinutes}`;
+    };
+
+    const fetchSchedules = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetchDoctorSchedules();
+            if (response === null) {
+                setError("Error fetching doctor schedules.");
+                return;
             }
-        };
+            setSchedules(response);
+        } catch (error) {
+            console.error(error);
+            setError('Failed to load schedules. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        fetchSchedules().then();
+    // Fetch schedules on component mount
+    useEffect(() => {
+        fetchSchedules();
     }, []);
 
     // Handle creating a new schedule
     const handleCreateSchedule = async () => {
+        setError(null);
+
+        // Ensure times exist
+        if (!newSchedule.startTime || !newSchedule.endTime) {
+            setError("Start time and end time are required.");
+            return;
+        }
+
+        // Convert startTime and endTime into proper Date objects
+        const [startHours, startMinutes] = newSchedule.startTime.split(":").map(Number);
+        const [endHours, endMinutes] = newSchedule.endTime.split(":").map(Number);
+        console.log(newSchedule)
+
+        // Create a Date object while keeping the correct day
+        const startDateTime = new Date(newSchedule.date);
+        startDateTime.setHours(startHours, startMinutes, 0, 0);
+        
+
+        const endDateTime = new Date(newSchedule.date);
+        endDateTime.setHours(endHours, endMinutes, 0, 0);
+        
         // Validate time inputs
-        if (newSchedule.startTime >= newSchedule.endTime) {
-            setError('End time must be after start time');
+        if (startDateTime >= endDateTime) {
+            setError("End time must be after start time");
             return;
         }
 
         setIsLoading(true);
         try {
-            const startDateTime = new Date(`${newSchedule.date}T${newSchedule.startTime}`);
-            const endDateTime = new Date(`${newSchedule.date}T${newSchedule.endTime}`);
-
-            const scheduleRequest: ScheduleRequest = {
-                doctor_id: doctorId,
-                start_time: startDateTime.toISOString(),
-                end_time: endDateTime.toISOString(),
+            const scheduleRequest: DoctorSchedules = {
+                doctor_id: "",
+                start_time: startDateTime,
+                end_time: endDateTime,
                 is_booked: false
             };
 
-            // In a real app, this would be an API call
-            /*
-            const response = await fetch('/api/schedules/new', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(scheduleRequest)
-            });
+            const response = await createSchedule(scheduleRequest);
+            if (!response) {
+                setError("Error creating schedule.");
+                return;
+            }
 
-            if (!response.ok) throw new Error('Failed to create schedule');
-            const data = await response.json();
-            setSchedules(prev => [...prev, data]);
-            */
-
-            // Using mock data for demo
-            const newId = (Math.max(...schedules.map(s => parseInt(s.id))) + 1).toString();
-            const newScheduleData: Schedule = {
-                id: newId,
-                ...scheduleRequest
-            };
-
-            setSchedules(prev => [...prev, newScheduleData]);
+            await fetchSchedules();
             setIsCreatingSchedule(false);
-            setNewSchedule({
-                startTime: '09:00',
-                endTime: '09:30',
-                date: format(new Date(), 'yyyy-MM-dd'),
-            });
-            setError(null);
         } catch (error) {
             console.error(error);
-            setError('Failed to create schedule. Please try again.');
+            setError("Failed to create schedule. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -195,6 +151,8 @@ export default function SchedulesPage() {
         const scheduleDate = new Date(schedule.start_time);
         return isSameDay(scheduleDate, selectedDate);
     });
+    
+    
 
     // Generate week days for the calendar view
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday start
@@ -212,7 +170,7 @@ export default function SchedulesPage() {
         }
 
         acc[day].push({
-            id: schedule.id,
+            id: schedule.id || `temp-${startTime.getTime()}`,
             startTime,
             endTime,
             isBooked: schedule.is_booked
@@ -234,6 +192,14 @@ export default function SchedulesPage() {
     };
 
     const officeHours = getOfficeHours();
+    
+    const deleteDoctorSchedule = async (schedule: DoctorSchedules) => {
+        const response = await deleteSchedule(schedule);
+        if (response === null) {
+            setError("Error deleting schedule.");
+        }
+        await fetchSchedules();
+    }
 
     return (
         <div className="p-6">
@@ -327,7 +293,7 @@ export default function SchedulesPage() {
                 ) : filteredSchedules.length > 0 ? (
                     <div className="divide-y divide-gray-200">
                         {filteredSchedules.map((schedule) => (
-                            <div key={schedule.id} className="px-6 py-4 flex items-center">
+                            <div key={schedule.id || `temp-${new Date(schedule.start_time).getTime()}`} className="px-6 py-4 flex items-center">
                                 <div className={`p-2 rounded-full ${schedule.is_booked ? 'bg-green-100' : 'bg-blue-100'} mr-4`}>
                                     <Clock size={20} className={schedule.is_booked ? 'text-green-600' : 'text-blue-600'} />
                                 </div>
@@ -339,12 +305,17 @@ export default function SchedulesPage() {
                                         {schedule.is_booked ? 'Booked appointment' : 'Available for booking'}
                                     </p>
                                 </div>
-                                <div className="ml-auto flex">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      schedule.is_booked ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {schedule.is_booked ? 'Booked' : 'Available'}
-                  </span>
+                                <div className="ml-auto flex gap-2">
+                                  
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        schedule.is_booked ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                        {schedule.is_booked ? 'Booked' : 'Available'}
+                                    </span>
+                                    {schedule.is_booked ? (<></>) : <Button className={"bg-red-700 rounded-full w-8 h-8"} onClick={() => deleteDoctorSchedule(schedule)}>
+                                        <TrashIcon className="text-white" size={20} />
+                                    </Button>}
+                                    
                                 </div>
                             </div>
                         ))}
@@ -455,7 +426,8 @@ export default function SchedulesPage() {
                                         type="date"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={newSchedule.date}
-                                        onChange={(e) => setNewSchedule({...newSchedule, date: e.target.value})}
+                                        onChange={(e) =>
+                                            setNewSchedule({...newSchedule, date: e.target.value})}
                                     />
                                 </div>
 
@@ -466,17 +438,24 @@ export default function SchedulesPage() {
                                             type="time"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             value={newSchedule.startTime}
-                                            onChange={(e) => setNewSchedule({...newSchedule, startTime: e.target.value})}
+                                            onChange={(e) => {
+                                                const newStartTime = e.target.value;
+                                                setNewSchedule({
+                                                    ...newSchedule,
+                                                    startTime: newStartTime,
+                                                    endTime: addMinutes(newStartTime, 30)
+                                                });
+                                            }}
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                                         <input
+                                            readOnly={true}
                                             type="time"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            value={newSchedule.endTime}
-                                            onChange={(e) => setNewSchedule({...newSchedule, endTime: e.target.value})}
+                                            value={addMinutes(newSchedule.startTime, 30)}
                                         />
                                     </div>
                                 </div>

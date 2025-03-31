@@ -6,26 +6,7 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 
 export default function AboutPage() {
-    const teamMembers = [
-        {
-            name: "Dr. Emily Chen",
-            role: "Founder & CEO",
-            image: "/frank.jpg",
-            description: "Former Chief of Medicine with 15+ years of healthcare experience"
-        },
-        {
-            name: "Michael Roberts",
-            role: "Chief Technology Officer",
-            image: "/poo.png",
-            description: "Tech innovator with expertise in healthcare systems"
-        },
-        {
-            name: "Dr. Sarah Johnson",
-            role: "Medical Director",
-            image: "/coo.png",
-            description: "Specialized in implementing patient-first healthcare solutions"
-        }
-    ];
+   
 
     const values = [
         {
@@ -122,32 +103,32 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Team Section */}
-            <section className="py-16">
-                <div className="container mx-auto px-4 max-w-6xl">
-                    <h2 className="text-3xl font-bold text-center mb-12">Meet Our Leadership Team</h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {teamMembers.map((member, index) => (
-                            <Card key={index} className="text-center">
-                                <CardHeader>
-                                    <Image
-                                        width={300}
-                                        height={300}
-                                        src={member.image}
-                                        alt={member.name}
-                                        className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
-                                    />
-                                    <CardTitle>{member.name}</CardTitle>
-                                    <p className="text-blue-600 font-medium">{member.role}</p>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-gray-600">{member.description}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/*/!* Team Section *!/*/}
+            {/*<section className="py-16">*/}
+            {/*    <div className="container mx-auto px-4 max-w-6xl">*/}
+            {/*        <h2 className="text-3xl font-bold text-center mb-12">Meet Our Leadership Team</h2>*/}
+            {/*        <div className="grid md:grid-cols-3 gap-8">*/}
+            {/*            {teamMembers.map((member, index) => (*/}
+            {/*                <Card key={index} className="text-center">*/}
+            {/*                    <CardHeader>*/}
+            {/*                        <Image*/}
+            {/*                            width={300}*/}
+            {/*                            height={300}*/}
+            {/*                            src={member.image}*/}
+            {/*                            alt={member.name}*/}
+            {/*                            className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"*/}
+            {/*                        />*/}
+            {/*                        <CardTitle>{member.name}</CardTitle>*/}
+            {/*                        <p className="text-blue-600 font-medium">{member.role}</p>*/}
+            {/*                    </CardHeader>*/}
+            {/*                    <CardContent>*/}
+            {/*                        <p className="text-gray-600">{member.description}</p>*/}
+            {/*                    </CardContent>*/}
+            {/*                </Card>*/}
+            {/*            ))}*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</section>*/}
 
             {/* Mission Section */}
             <section className="py-16 bg-[#9871ff] text-white">
