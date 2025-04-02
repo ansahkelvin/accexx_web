@@ -46,8 +46,8 @@ export default function SidebarLinks({ isCollapsed = false }: SidebarLinksProps)
             icon: <MessageSquare className="w-5 h-5" />,
         },
         {
-            title: "Medical Record",
-            href: "/patients/medical-record",
+            title: "Evidence",
+            href: "/patients/evidence",
             icon: <FileText className="w-5 h-5" />,
         },
         {

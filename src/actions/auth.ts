@@ -99,3 +99,43 @@ export async function logoutAction() {
         redirect('/login');
     }
 }
+
+export async function registerPatient(formData: FormData) {
+    try {
+        const response = await fetch(`${BASE_URL}/auth/patient/register`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error("Registration failed:", response.status, errorData);
+            throw new Error(errorData?.detail || `Registration failed with status: ${response.status}`);
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
+    }
+}
+
+export async function registerDoctor(formData: FormData) {
+    try{
+        const response = await fetch(`${BASE_URL}/auth/doctor/register`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error("Registration failed:", response.status, errorData);
+            throw new Error(errorData?.detail || `Registration failed with status: ${response.status}`);
+        }
+        return await response.json();
+
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}

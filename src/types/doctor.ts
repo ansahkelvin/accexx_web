@@ -14,3 +14,17 @@ export interface IPatients {
     email: string;
     profile_image?: string;
 }
+
+export interface DoctorDetails {
+    id: string;
+    email: string;
+    name: string;
+    gmc_number: string;
+    specialization: string;
+    bio: string;
+    work_address: string;
+    work_address_latitude: number;
+    work_address_longitude: number;
+    role: string;
+    profile_image: string;
+}

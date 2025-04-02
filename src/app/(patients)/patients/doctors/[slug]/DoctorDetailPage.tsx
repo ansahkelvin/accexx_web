@@ -179,14 +179,14 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                         <PhoneIcon className="h-5 w-5 text-blue-500 mt-0.5" />
                                         <div className="ml-3 text-sm">
                                             <h3 className="text-gray-700 font-medium">Phone</h3>
-                                            <p className="text-gray-600">+233 55 123 4567</p>
+                                            <p className="text-gray-600">Not Available</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center">
                                         <MailIcon className="h-5 w-5 text-blue-500 mt-0.5" />
                                         <div className="ml-3 text-sm">
                                             <h3 className="text-gray-700 font-medium">Email</h3>
-                                            <p className="text-gray-600">dr.{doctor.name.toLowerCase().replace(' ', '.')}@healthcare.com</p>
+                                            <p className="text-gray-600">Not Available</p>
                                         </div>
                                     </div>
                                 </div>
@@ -335,13 +335,13 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                                                     : 'text-gray-500'
                                                         }`} />
                                                         <span>
-                              {format(new Date(schedule.start_time), 'h:mm a')}
-                            </span>
-                                                    </div>
-                                                    {schedule.is_booked && (
-                                                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
-                              Booked
-                            </span>
+                                                          {format(new Date(schedule.start_time), 'h:mm a')}
+                                                        </span>
+                                                                </div>
+                                                            {schedule.is_booked && ( 
+                                                                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                          Booked
+                                                        </span>
                                                     )}
                                                 </button>
                                             ))
@@ -359,27 +359,27 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                                 <div>
                                                     <label className="block text-md py-3 text-gray-700 font-bold mb-2">Appointment Type</label>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        <label
-                                                            className={`border rounded-lg p-4 text-sm flex items-center cursor-pointer transition ${
-                                                                appointmentType === 'VIRTUAL'
-                                                                    ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-200'
-                                                                    : 'hover:bg-gray-50'
-                                                            }`}
-                                                        >
-                                                            <input
-                                                                type="radio"
-                                                                name="appointmentType"
-                                                                value="VIRTUAL"
-                                                                checked={appointmentType === 'VIRTUAL'}
-                                                                onChange={() => setAppointmentType('VIRTUAL')}
-                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                                                            />
-                                                            <div className="ml-3 text-sm">
-                                                                <span className="block text-gray-900 font-medium">Virtual Visit</span>
-                                                                <span className="block text-gray-500 text-sm">Consult with the doctor online</span>
-                                                            </div>
-                                                            <VideoIcon className="ml-auto h-5 w-5 text-blue-500" />
-                                                        </label>
+                                                        {/*<label*/}
+                                                        {/*    className={`border rounded-lg p-4 text-sm flex items-center cursor-pointer transition ${*/}
+                                                        {/*        appointmentType === 'VIRTUAL'*/}
+                                                        {/*            ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-200'*/}
+                                                        {/*            : 'hover:bg-gray-50'*/}
+                                                        {/*    }`}*/}
+                                                        {/*>*/}
+                                                        {/*    <input*/}
+                                                        {/*        type="radio"*/}
+                                                        {/*        name="appointmentType"*/}
+                                                        {/*        value="VIRTUAL"*/}
+                                                        {/*        checked={appointmentType === 'VIRTUAL'}*/}
+                                                        {/*        onChange={() => setAppointmentType('VIRTUAL')}*/}
+                                                        {/*        className="h-4 w-4 text-blue-600 focus:ring-blue-500"*/}
+                                                        {/*    />*/}
+                                                        {/*    <div className="ml-3 text-sm">*/}
+                                                        {/*        <span className="block text-gray-900 font-medium">Virtual Visit</span>*/}
+                                                        {/*        <span className="block text-gray-500 text-sm">Consult with the doctor online</span>*/}
+                                                        {/*    </div>*/}
+                                                        {/*    <VideoIcon className="ml-auto h-5 w-5 text-blue-500" />*/}
+                                                        {/*</label>*/}
 
                                                         <label
                                                             className={`border rounded-lg p-4 flex items-center cursor-pointer transition ${

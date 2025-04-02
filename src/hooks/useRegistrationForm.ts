@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { RegistrationFormData } from '@/types/FormData';
 import { validateEmail, validatePassword, validatePhoneNumber, validateCoordinates } from '@/types/FormData';
+import {registerPatient} from "@/actions/auth";
+import {useRouter} from "next/navigation";
 
 export const useRegistrationForm = () => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -18,6 +20,10 @@ export const useRegistrationForm = () => {
         password: '',
         confirmPassword: ''
     });
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null)
+    const [registrationSuccess, setRegistrationSuccess] = useState(false)
 
     const validateStep = (step: number): boolean => {
         const newErrors: { [key: string]: string } = {};
@@ -87,15 +93,55 @@ export const useRegistrationForm = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (validateStep(currentStep)) {
-            try {
-                console.log('Form submitted:', formData);
+            setIsSubmitting(true);
+            setSubmissionError(null);
 
+            try {
+                // Create a FormData object for multipart/form-data submission
+                const submitFormData = new FormData();
+
+                // Map form fields to match EXACTLY what the FastAPI endpoint expects
+                submitFormData.append('email', formData.email);
+                submitFormData.append('password', formData.password);
+                submitFormData.append('name', formData.name);
+                submitFormData.append('address', formData.address);
+
+                // Ensure date is in ISO format for proper datetime conversion
+                // FastAPI expects a datetime object from this field
+                submitFormData.append('date_of_birth', formData.dateOfBirth);
+
+                // Optional coordinates - only add if they exist
+                if (formData.latitude) {
+                    submitFormData.append('latitude', formData.latitude);
+                }
+                if (formData.longitude) {
+                    submitFormData.append('longitude', formData.longitude);
+                }
+
+                // Handle profile image - make sure it's a File object
+                if (formData.file instanceof File) {
+                    submitFormData.append('profile_image', formData.file);
+                }
+
+                // Debug: Log what's being submitted
+                console.log("Submitting form data:");
+                for (const pair of submitFormData.entries()) {
+                    console.log(`${pair[0]}: ${pair[1]}`);
+                }
+
+                const response = await registerPatient(submitFormData);
+                console.log('Registration successful:', response);
+
+                setRegistrationSuccess(true);
+                router.push("/login");
             } catch (error) {
                 console.error('Error submitting form:', error);
+                setSubmissionError(error instanceof Error ? error.message : 'Registration failed');
+            } finally {
+                setIsSubmitting(false);
             }
         }
     };
-
 
 
     return {

@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/user";
 import Link from "next/link";
 import {AllDoctor, NearbyDoctor, TopDoctor} from "@/types/types";
+import {Button} from "@/components/ui/button";
 
 
 export default function DoctorsPage() {
@@ -43,7 +44,6 @@ export default function DoctorsPage() {
                 if (allDoctorsData) {
                     setAllDoctors(allDoctorsData.map(doctor => ({
                         ...doctor,
-                        id: Math.random().toString(36).substring(2, 9), // Generate temporary ID
                         isFavorite: false
                     })));
                 }
@@ -55,7 +55,6 @@ export default function DoctorsPage() {
                 if (topDoctorsData) {
                     setTopDoctors(topDoctorsData.map(doctor => ({
                         ...doctor,
-                        id: Math.random().toString(36).substring(2, 9), // Generate temporary ID
                     })));
                 }
                 setIsLoading(prev => ({ ...prev, top: false }));
@@ -75,7 +74,7 @@ export default function DoctorsPage() {
             }
         };
 
-        fetchDoctors();
+        fetchDoctors().then();
     }, []);
 
     // Search state
@@ -220,9 +219,11 @@ export default function DoctorsPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
-                                                    Book
-                                                </button>
+                                                <Button asChild className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
+                                                    <Link href={`/patients/doctors/${doctor.id}`}>
+                                                        Book
+                                                    </Link>
+                                                </Button>
                                             </td>
                                         </tr>
                                     ))}
@@ -308,7 +309,7 @@ export default function DoctorsPage() {
                                         <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
                                     </div>
                                 </div>
-                            ) : nearbyDoctors.length > 0 ? (
+                            ): nearbyDoctors.length > 0 ? (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4">
                                     <div className="flex px-4 pb-4 space-x-4">
                                         {nearbyDoctors.map(doctor => (
@@ -417,9 +418,13 @@ export default function DoctorsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
-                                                        Book
-                                                    </button>
+                                                    <Button
+                                                        asChild
+                                                        className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
+                                                        <Link href={`/patients/doctors/${doctor.id}`}>
+                                                            Book
+                                                        </Link>
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -446,63 +451,67 @@ interface FeaturedDoctorCardProps {
 
 const FeaturedDoctorCard: React.FC<FeaturedDoctorCardProps> = ({ doctor }) => {
     return (
-        <div className="rounded-lg bg-white shadow-sm border border-gray-100 overflow-hidden h-full">
-            {/* Card header */}
-            <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center">
-                    <Image
-                        width={48}
-                        height={48}
-                        src={doctor.profile_image}
-                        alt={doctor.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div className="ml-3">
-                        <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
-                        <p className="text-[#9871ff] text-sm">{doctor.specialization}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Card body */}
-            <div className="p-4">
-                <div className="flex items-center mb-3">
-                    <div className="flex mr-2">
-                        {[...Array(5)].map((_, i) => (
-                            <Star
-                                key={i}
-                                size={16}
-                                className={i < Math.floor(doctor.rating)
-                                    ? "text-[#ffc107] fill-[#ffc107]"
-                                    : "text-gray-200"}
+            <Link
+                href={`/patients/doctors/${doctor.id}`}>
+                <div className="rounded-lg bg-white shadow-sm border border-gray-100 overflow-hidden h-full">
+                    {/* Card header */}
+                    <div className="p-4 border-b border-gray-100">
+                        <div className="flex items-center">
+                            <Image
+                                width={48}
+                                height={48}
+                                src={doctor.profile_image}
+                                alt={doctor.name}
+                                className="w-12 h-12 rounded-full object-cover"
                             />
-                        ))}
+                            <div className="ml-3">
+                                <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
+                                <p className="text-[#9871ff] text-sm">{doctor.specialization}</p>
+                            </div>
+                        </div>
                     </div>
-                    <span className="text-sm text-gray-500">
+
+                    {/* Card body */}
+                    <div className="p-4">
+                        <div className="flex items-center mb-3">
+                            <div className="flex mr-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        size={16}
+                                        className={i < Math.floor(doctor.rating)
+                                            ? "text-[#ffc107] fill-[#ffc107]"
+                                            : "text-gray-200"}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-sm text-gray-500">
                         {doctor.rating.toFixed(1)}
                     </span>
-                </div>
+                        </div>
 
-                <div className="flex items-center text-sm text-gray-600 mb-3">
-                    <MapPin size={16} className="mr-2 text-[#9871ff]" />
-                    <span className="truncate">{doctor.work_address}</span>
-                </div>
+                        <div className="flex items-center text-sm text-gray-600 mb-3">
+                            <MapPin size={16} className="mr-2 text-[#9871ff]" />
+                            <span className="truncate">{doctor.work_address}</span>
+                        </div>
 
-                {doctor.rating >= 4.8 && (
-                    <div className="bg-[#f8f4ff] text-[#9871ff] text-sm rounded p-2 flex items-center mb-3">
-                        <Award size={16} className="mr-2" />
-                        <span>Top Rated Doctor</span>
+                        {doctor.rating >= 4.8 && (
+                            <div className="bg-[#f8f4ff] text-[#9871ff] text-sm rounded p-2 flex items-center mb-3">
+                                <Award size={16} className="mr-2" />
+                                <span>Top Rated Doctor</span>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            {/* Card footer */}
-            <div className="p-4 mt-auto border-t border-gray-100">
-                <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
-                    Book Appointment
-                </button>
-            </div>
-        </div>
+                    {/* Card footer */}
+                    <div className="p-4 mt-auto border-t border-gray-100">
+                        <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
+                            Book Appointment
+                        </button>
+                    </div>
+                </div>
+        </Link>
+       
     );
 };
 

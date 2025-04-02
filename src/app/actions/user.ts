@@ -97,8 +97,6 @@ export async function fetchPatientAppointment() {
     }
 }
 
-
-
 export async function fetchTopDoctors(): Promise<TopDoctor[] | null> {
     try {
         const cookieStore = await cookies();

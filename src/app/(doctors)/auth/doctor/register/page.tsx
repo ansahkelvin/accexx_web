@@ -1,13 +1,13 @@
 "use client"
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle, ArrowRight, Stethoscope, Calendar, UserRound, Mail, Lock, Building, MapPin, Upload } from 'lucide-react';
+import { CheckCircle, ArrowRight, Stethoscope, UserRound, MapPin, Upload } from 'lucide-react';
 import PersonalInfoForm from "@/components/ui/personal-information";
 import ProfessionalInfoForm from "@/components/ui/professional-form";
 import WorkAddressForm from "@/components/ui/work-address";
 import UploadImageForm from "@/components/ui/image-upload";
 import ConfirmationStep from "@/components/ui/confirmation";
-import Image from 'next/image';
+import {registerDoctor} from "@/actions/auth";
+import {useRouter} from "next/navigation";
 
 const steps = [
     { id: 'personal', name: 'Personal Information', icon: UserRound },
@@ -18,7 +18,6 @@ const steps = [
 ];
 
 export default function RegisterPage() {
-    const router = useRouter();
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -37,7 +36,7 @@ export default function RegisterPage() {
     });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-
+    const router = useRouter();
     const updateFormData = (fieldData: Partial<typeof formData>) => {
         setFormData(prev => ({
             ...prev,
@@ -119,18 +118,10 @@ export default function RegisterPage() {
             formDataToSend.append('work_address_latitude', formData.work_address_latitude.toString());
             formDataToSend.append('work_address_longitude', formData.work_address_longitude.toString());
             if (formData.profile_image) formDataToSend.append('profile_image', formData.profile_image);
+            
+           await registerDoctor(formDataToSend);
+           router.push("/login");
 
-            // const response = await fetch('/api/doctor/auth', {
-            //     method: 'POST',
-            //     body: formDataToSend
-            // });
-            //
-            // if (response.ok) {
-            //     router.push('/login?registered=true');
-            // } else {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.detail || 'Registration failed');
-            // }
         } catch (error) {
             console.error('Registration error:', error);
             setFormErrors({

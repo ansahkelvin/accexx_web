@@ -7,6 +7,7 @@ import Image from "next/image";
 import {BarChart2, Calendar, Settings, Users, InboxIcon, TimerIcon} from "lucide-react";
 import {useSidebar} from "@/components/doctors/sidebar-context";
 import {NavItem} from "@/types/types";
+import {LogoutButton} from "@/components/auth/logout-button";
 
 export default function Sidebar() {
     const { isSidebarOpen, toggleSidebar } = useSidebar();
@@ -57,7 +58,7 @@ export default function Sidebar() {
                 <div className="flex flex-col h-full">
                     <div className="flex items-center space-x-3">
                         <div className="h-28 w-28 rounded-lg flex items-center justify-center">
-                            <Image src={"/logo.png"} alt={"MediBook Logo"} width={250} height={250} />
+                            <Image src={"/logo.png"} alt={"Logo"} width={250} height={250} />
                         </div>
                     </div>
 
@@ -85,7 +86,9 @@ export default function Sidebar() {
                             })}
                         </ul>
                     </nav>
-                    
+                    <div className={`px-4 mb-24`}>
+                        <LogoutButton />
+                    </div>
                 </div>
             </div>
 
@@ -109,11 +112,11 @@ export default function Sidebar() {
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
-                                    <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-lg">MB</span>
+                                    <div className="h-28 w-28 rounded-lg flex items-center justify-center">
+                                        <Image src={"/logo.png"} alt={"Logo"} width={250} height={250} />
                                     </div>
-                                    <h1 className="text-xl font-bold text-gray-800">MediBook</h1>
                                 </div>
+
                                 <button
                                     onClick={toggleSidebar}
                                     className="text-gray-500 hover:text-gray-700"
@@ -157,6 +160,10 @@ export default function Sidebar() {
                                 })}
                             </ul>
                         </nav>
+
+                        <div className={`px-4 ${isSidebarOpen ? 'block' : 'hidden'} ${!isSidebarOpen && 'px-2 flex justify-center'}`}>
+                            <LogoutButton />
+                        </div>
                         
                     </div>
                 </div>

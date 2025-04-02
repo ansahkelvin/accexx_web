@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
     // Handle expired or invalid token case
     if (isAuthenticated) {
         try {
-            const response = await fetch(`http://localhost:8000/auth/validate-token`, {
+            const response = await fetch(`https://accexx247.com/backend/api/auth/validate-token`, {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
 
@@ -46,9 +46,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // **Doctor routes protection**
-    if (pathname.startsWith("/doctors") && pathname !== "/doctors/login" && pathname !== "/doctors/register") {
+    if (pathname.startsWith("/doctors") && pathname !== "/login" && pathname !== "/doctors/register") {
         if (!isAuthenticated) {
-            return NextResponse.redirect(new URL("/doctors/login", request.url));
+            return NextResponse.redirect(new URL("/login", request.url));
         }
         if (userRole !== "doctor") {
             return NextResponse.redirect(new URL("/patients", request.url));
@@ -73,10 +73,11 @@ export const config = {
     matcher: [
         "/doctors/:path*",
         "/patients/:path*",
-        "/doctors/login",
+        "/login",
         "/doctors/register",
+        "/register",
         "/patients/login",
-        "/patients/register",
+        "/patients/register",  // This is including your registration page!
         "/", "/about", "/contact", "/faq", "/for-doctors", "/services",
     ],
 };

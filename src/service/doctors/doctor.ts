@@ -2,7 +2,7 @@
 
 import {BASE_URL} from "@/config/config";
 import {cookies} from "next/headers";
-import {DoctorDetails} from "@/types/types";
+import {DoctorDetails} from "@/types/doctor";
 import {DoctorSchedules, IPatients} from "@/types/doctor";
 
 export interface Appointment {
@@ -67,6 +67,70 @@ export const fetchDoctorDetails = async () => {
     }
     const user: DoctorDetails = await response.json();
     return user;
+}
+
+export const editDoctorDetails = async (doctor: DoctorDetails, imageFile?: File) => {
+    // Get Access to the cookie store
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+
+    if (!accessToken) {
+        console.error("No access token found");
+        return null;
+    }
+
+    // Create FormData object for multipart/form-data
+    const formData = new FormData();
+
+    // Add all required fields to match the FastAPI endpoint parameters
+    formData.append('doctor_id', doctor.id);
+    formData.append('email', doctor.email);
+    formData.append('name', doctor.name);
+    formData.append('gmc_number', doctor.gmc_number);
+    formData.append('specialization', doctor.specialization);
+
+    // Add optional fields with null check
+    if (doctor.bio) {
+        formData.append('bio', doctor.bio);
+    }
+
+    formData.append('work_address', doctor.work_address);
+    formData.append('work_address_latitude', String(doctor.work_address_latitude));
+    formData.append('work_address_longitude', String(doctor.work_address_longitude));
+
+    // Add the image file if it exists
+    if (imageFile) {
+        formData.append('profile_image', imageFile);
+    }
+
+    const endpoint = `${BASE_URL}/users/doctor/profile/edit`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: "PUT",
+            body: formData,
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error("Failed to update doctor details:", response.status, response.statusText, errorData);
+            return null;
+        }
+
+        // Return the original doctor data with any updates
+        // Since your API returns a success message rather than the updated object
+        return {
+            ...doctor,
+            profile_image: imageFile ? URL.createObjectURL(imageFile) : doctor.profile_image
+        };
+    } catch (error) {
+        console.error("Error updating doctor details:", error);
+        return null;
+    }
 }
 
 export const fetchDashboard = async () => {
@@ -216,3 +280,4 @@ export const fetchDoctorPatient = async () => {
     return patients
     
 }
+

@@ -1,45 +1,40 @@
 'use client';
 
 import React, { useEffect, useState} from 'react';
-import { Calendar, Clock, User, CheckCircle, XCircle, Filter, Plus, ChevronRight } from 'lucide-react';
-import {AppointmentStats, fetchDashboard} from "@/service/doctors/doctor";
+import {Calendar, Clock, CheckCircle, XCircle, Mail, User} from 'lucide-react';
+import {AppointmentStats, fetchDashboard, fetchDoctorPatient} from "@/service/doctors/doctor";
+import {IPatients} from "@/types/doctor";
+import PatientProfileImage from "@/components/patient/Profile";
+import Link from "next/link";
 
 
-// TypeScript interfaces
-interface Appointment {
-    id: number;
-    patientName: string;
-    patientAvatar?: string;
-    time: string;
-    status: 'confirmed' | 'pending' | 'canceled';
-    issue: string;
-    duration: number;
-}
 
-interface Stats {
-    today: {
-        total: number;
-        confirmed: number;
-        pending: number;
-        canceled: number;
-    };
-    week: {
-        total: number;
-        confirmed: number;
-        pending: number;
-        canceled: number;
-    };
-    month: {
-        total: number;
-        confirmed: number;
-        pending: number;
-        canceled: number;
-    };
-}
+
 
 export default function DoctorDashboard() {
-    
+
     const [dashboardData, setDashboardData] = useState<AppointmentStats | null >(null);
+    const [patient, setPatient] = useState<IPatients[] | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const fetchPatients = async (): Promise<void> => {
+            setIsLoading(true);
+            try {
+                const response = await fetchDoctorPatient();
+                console.log(response);
+                if (response !== null) {
+                    setPatient(response);
+                }
+            } catch (error) {
+                console.error("Error fetching patients:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchPatients();
+    }, []);
+
 
     useEffect(() => {
         const fetchAppointmentDetails = async () => {
@@ -55,23 +50,9 @@ export default function DoctorDashboard() {
         }
         fetchAppointmentDetails().then()
     }, []);
-    
-    
-    
-    // Sample data - in a real app this would come from an API
-    const appointments: Appointment[] = [
-        { id: 1, patientName: "Emma Johnson", time: "09:00 AM", status: "confirmed", issue: "Annual checkup", duration: 30 },
-        { id: 2, patientName: "Michael Chen", time: "10:30 AM", status: "confirmed", issue: "Headache consultation", duration: 45 },
-        { id: 3, patientName: "Sarah Williams", time: "01:00 PM", status: "pending", issue: "Skin rash", duration: 30 },
-        { id: 4, patientName: "Robert Davis", time: "02:30 PM", status: "confirmed", issue: "Follow-up appointment", duration: 20 },
-        { id: 5, patientName: "James Wilson", time: "04:00 PM", status: "canceled", issue: "Throat infection", duration: 30 },
-    ];
 
-    const stats: Stats = {
-        today: { total: 8, confirmed: 5, pending: 2, canceled: 1 },
-        week: { total: 32, confirmed: 24, pending: 5, canceled: 3 },
-        month: { total: 120, confirmed: 98, pending: 12, canceled: 10 }
-    };
+
+
 
 
     return (
@@ -138,52 +119,83 @@ export default function DoctorDashboard() {
                             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                                 <div className="px-4 py-3 border-b border-gray-100">
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                                        <h3 className="text-lg md:text-xl font-medium text-gray-500">Today&#39;s Appointments</h3>
+                                        <h3 className="text-lg md:text-xl font-medium text-gray-500">All Patients</h3>
                                     </div>
                                 </div>
-                                <div className="divide-y divide-gray-100">
-                                    {appointments.map((appointment) => (
-                                        <div key={appointment.id} className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
-                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                                                <div className="flex items-center mb-2 sm:mb-0">
-                                                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                                                        <User size={18} className="text-gray-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm md:text-base font-medium text-gray-800">{appointment.patientName}</h4>
-                                                        <div className="flex items-center space-x-2 mt-0.5">
-                                                            <span className="text-sm text-gray-500">{appointment.issue}</span>
-                                                            <span className="text-sm px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                                                                {appointment.duration} min
+
+                                {isLoading ? (
+                                    <div className="bg-white rounded-lg shadow p-8 text-center">
+                                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                                        <p className="mt-4 text-gray-600">Loading patients...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {patient && patient.length > 0 ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+                                                {patient.map(patient => (
+                                                    <div
+                                                        key={patient.id}
+                                                        className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
+                                                        // onClick={() => openPatientDetail(patient)}
+                                                    >
+                                                        <div className="p-6">
+                                                            <div className="flex items-center mb-4">
+                                                                <PatientProfileImage
+                                                                    imageUrl={patient.profile_image!}
+                                                                    name={patient.name}
+                                                                    size="md"
+                                                                />
+                                                                <div className="ml-4">
+                                                                    <h3 className="font-medium text-lg text-gray-900">{patient.name}</h3>
+                                                                    <p className="text-sm text-gray-500">Patient ID: {patient.id.substring(0, 8)}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-3 text-sm">
+                                                                <div className="flex items-center text-gray-600">
+                                                                    <Mail size={16} className="mr-2 text-gray-400 flex-shrink-0" />
+                                                                    <span className="truncate">{patient.email}</span>
+                                                                </div>
+                                                                <div className="flex items-center text-gray-600">
+                                                                    <Calendar size={16} className="mr-2 text-gray-400 flex-shrink-0" />
+                                                                    <span>No appointments yet</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="py-3 px-6 bg-gray-50 rounded-b-lg flex justify-between items-center">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                Active
                                                             </span>
+                                                            <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                                                                View Profile
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center justify-between sm:justify-end sm:space-x-4">
-                                                    <div className="flex items-center sm:flex-col sm:items-end">
-                                                        <div className="flex items-center sm:mb-1">
-                                                            <Clock size={16} className="text-gray-400 mr-1 sm:hidden" />
-                                                            <span className="text-sm font-medium text-gray-700">{appointment.time}</span>
-                                                        </div>
-                                                        <span className={`text-sm px-2 py-0.5 rounded-full ${
-                                                            appointment.status === 'confirmed' ? 'bg-green-50 text-green-600 border border-green-100' :
-                                                                appointment.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' :
-                                                                    'bg-red-50 text-red-600 border border-red-100'
-                                                        }`}>
-                                                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                                                        </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center min-h-[300px] p-8">
+                                                <div className="text-center">
+                                                    <div className="mx-auto h-16 w-16 bg-blue-100 flex items-center justify-center rounded-full mb-4">
+                                                        <User size={32} className="text-blue-600" />
                                                     </div>
-                                                    <button className="ml-3 p-1.5 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors">
-                                                        <ChevronRight size={16} />
-                                                    </button>
+                                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                                        No patients yet
+                                                    </h3>
+                                                    <p className="text-gray-500 mb-6">
+                                                        Start by accepting new appointments
+                                                    </p>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        )}
+                                    </>
+                                )}
+
                                 <div className="px-4 py-3 border-t border-gray-100">
                                     <button className="w-full py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
-                                        View all appointments
+                                        <Link href={'/doctors/patients'}>
+                                            View all patients
+                                        </Link>
                                     </button>
                                 </div>
                             </div>

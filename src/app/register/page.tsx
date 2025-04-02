@@ -117,7 +117,7 @@ const RegistrationStepper: React.FC = () => {
                             <Shield className="h-4 w-4" />
                         </div>
                         <p className="text-xs">
-                            Your data is secure with our HIPAA-compliant platform
+                            Your data is secure with our platform
                         </p>
                     </div>
                 </div>
