@@ -1,7 +1,7 @@
 "use server"
 import {cookies} from "next/headers";
 import {BASE_URL} from "@/config/config";
-import {FileRecord} from "@/app/(patients)/patients/medical-record/page";
+import {FileRecord} from "@/app/(patients)/patients/evidence/page";
 
 export  async function fetchMedicalFiles() {
     const cookieStore = await cookies();

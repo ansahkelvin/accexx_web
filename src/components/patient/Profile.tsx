@@ -29,6 +29,7 @@ const PatientProfileImage: React.FC<PatientProfileImageProps> = ({ imageUrl, nam
     if (imageUrl && imageUrl !== "null" && !imageUrl.includes("undefined")) {
         return (
             <div className={`${sizeClass} rounded-full overflow-hidden border-2 border-blue-100`}>
+                {/* eslint-disable @next/next/no-img-element */}
                 <img
                     src={imageUrl}
                     alt={`${name}'s profile`}

@@ -21,9 +21,13 @@ export const useRegistrationForm = () => {
         confirmPassword: ''
     });
     const router = useRouter();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submissionError, setSubmissionError] = useState<string | null>(null)
-    const [registrationSuccess, setRegistrationSuccess] = useState(false)
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_isSubmitting, setIsSubmitting] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [submissionError, setSubmissionError] = useState<string | null>(null) 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [registrationSuccess, setRegistrationSuccess] = useState(false) 
 
     const validateStep = (step: number): boolean => {
         const newErrors: { [key: string]: string } = {};

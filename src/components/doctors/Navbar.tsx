@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Bell, Menu, Search } from "lucide-react";
 import Image from "next/image";
 import { useSidebar } from "@/components/doctors/sidebar-context";
-import { DoctorDetails } from "@/types/types";
 import { fetchDoctorDetails } from "@/service/doctors/doctor";
+import {DoctorDetails} from "@/types/doctor";
 
 export default function Navbar() {
     const [currentUser, setCurrentUser] = useState<DoctorDetails | null>(null);

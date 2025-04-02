@@ -91,9 +91,10 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({ handleImageChange, im
                     <div className="relative border rounded-lg overflow-hidden">
                         <div className="flex justify-center p-4">
                             <div className="relative w-40 h-40 rounded-full overflow-hidden border-2 border-gray-200">
+                                {/* eslint-disable @next/next/no-img-element */}
                                 <img
                                     src={imagePreview}
-                                    alt="Profile preview"
+                                    alt=""
                                     className="w-full h-full object-cover"
                                 />
                             </div>

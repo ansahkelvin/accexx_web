@@ -12,6 +12,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import Image from "next/image";
 
 // Types
 interface User {
@@ -26,6 +27,7 @@ interface User {
 
 const Settings: NextPage = () => {
     // Success message state
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Profile form
@@ -94,7 +96,7 @@ const Settings: NextPage = () => {
                                 <div className="flex items-center space-x-4 mb-6">
                                     <Avatar className="w-24 h-24">
                                         {profileImage ? (
-                                            <img src={profileImage} alt="User Profile" className="w-full h-full rounded-full object-cover" />
+                                            <Image width={800} height={800} src={profileImage} alt="User Profile" className="w-full h-full rounded-full object-cover" />
                                         ) : null}
                                     </Avatar>
                                     <div>

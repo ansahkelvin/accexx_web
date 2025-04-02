@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, User, Mail, Calendar, Award, BookOpen, MapPin, Clipboard, AlertCircle } from 'lucide-react';
+import Image from "next/image";
 
 interface ConfirmationStepProps {
     formData: {
@@ -27,7 +28,9 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ formData, imagePrev
                 month: 'long',
                 year: 'numeric'
             });
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
+            
             return dateString;
         }
     };
@@ -57,10 +60,12 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ formData, imagePrev
                 {imagePreview ? (
                     <div className="relative">
                         <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                            <img
+                            <Image
                                 src={imagePreview}
                                 alt="Profile preview"
                                 className="w-full h-full object-cover"
+                                width={800}
+                                height={800}
                             />
                         </div>
                         <div className="absolute -bottom-2 -right-2 bg-indigo-100 rounded-full p-2 border-2 border-white shadow-md">

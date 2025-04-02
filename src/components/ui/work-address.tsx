@@ -23,8 +23,18 @@ const WorkAddressForm: React.FC<WorkAddressFormProps> = ({ formData, updateFormD
     const googleMapRef = useRef<google.maps.Map | null>(null);
     const markerRef = useRef<google.maps.Marker | null>(null);
 
+    // Update coordinates in form data when marker is moved
+
+
     // Initialize Google Maps and Places API
     useEffect(() => {
+        const updateMarkerPosition = (lat: number, lng: number) => {
+            updateFormData({
+                work_address_latitude: lat,
+                work_address_longitude: lng
+            });
+        };
+
         const initMap = async () => {
             try {
                 const mapLoader = new Loader({
@@ -138,15 +148,8 @@ const WorkAddressForm: React.FC<WorkAddressFormProps> = ({ formData, updateFormD
         };
 
         initMap();
-    }, []);
+    }, [formData.work_address_latitude, formData.work_address_longitude, updateFormData]);
 
-    // Update coordinates in form data when marker is moved
-    const updateMarkerPosition = (lat: number, lng: number) => {
-        updateFormData({
-            work_address_latitude: lat,
-            work_address_longitude: lng
-        });
-    };
 
     // Get user's current location
     const getUserLocation = () => {

@@ -568,9 +568,11 @@ export default function MedicalRecordsPage() {
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                                 />
                                                 <label htmlFor={`doctor-${doctor.id}`} className="ml-3 flex items-center cursor-pointer">
+                                                    {/* eslint-disable @next/next/no-img-element */}
+
                                                     <img
                                                         src={doctor.avatar}
-                                                        alt={doctor.name}
+                                                        alt={""}
                                                         className="h-8 w-8 rounded-full mr-3"
                                                     />
                                                     <div>

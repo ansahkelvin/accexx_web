@@ -109,6 +109,7 @@ export default function AppointmentCard({
                     <div className="flex-grow">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                {/* eslint-disable @next/next/no-img-element */}
                                 {appointment.doctor_image_url ? (
                                     <img
                                         src={appointment.doctor_image_url}

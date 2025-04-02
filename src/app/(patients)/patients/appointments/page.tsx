@@ -975,6 +975,7 @@ export default function AppointmentsPage() {
                                                                     >
                                                                         <div className="flex items-start gap-3">
                                                                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                                                                {/* eslint-disable @next/next/no-img-element */}
                                                                                 {app.doctor_image_url ? (
                                                                                     <img
                                                                                         src={app.doctor_image_url}

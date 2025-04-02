@@ -3,6 +3,7 @@
 import React, {useEffect, useState, useRef} from 'react';
 import { User, Save, Check, X } from 'lucide-react';
 import {fetchDoctorDetails, editDoctorDetails} from "@/service/doctors/doctor";
+import Image from "next/image";
 
 interface DoctorDetails {
     id: string;
@@ -162,10 +163,12 @@ export default function SettingsPage() {
                                         onClick={handleImageClick}
                                     >
                                         {imagePreview ? (
-                                            <img
+                                            <Image
                                                 src={imagePreview}
                                                 alt={profile.name}
                                                 className="w-full h-full object-cover"
+                                                width={1400}
+                                                height={1400}
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gray-200">
