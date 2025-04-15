@@ -7,7 +7,8 @@ import { CalendarIcon, MapPinIcon, ClockIcon, VideoIcon, UserIcon, PhoneIcon, Ma
 import { format } from 'date-fns';
 import {AppointmentRequestData, AppointmentStatus, AppointmentType, DoctorDetails, Schedule} from "@/types/types";
 import {bookAppointment} from "@/app/actions/user";
-
+import {useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
 
 
 // Create a client component that takes the slug as a prop, not params
@@ -18,6 +19,8 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
     const [appointmentType, setAppointmentType] = useState<'VIRTUAL' | 'IN_PERSON'>('VIRTUAL');
     const [isBooking, setIsBooking] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [bookNow, setBookNow] = useState(false);
+    const router = useRouter();
 
 
 
@@ -69,14 +72,13 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
             const response = await bookAppointment(appointmentPayload);
             console.log(response)
 
-
-
-
             setBookingSuccess(true);
             // Show success toast
             toast.success("Appointment booked successfully!");
+            
 
             // Redirect to appointments page
+            router.push('/patients/appointments');
 
 
 
@@ -116,8 +118,9 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                     <Image
                                         src={doctor.profile_image}
                                         alt={doctor.name}
-                                        fill
-                                        className="object-cover rounded"
+                                        width={300}
+                                        height={300}
+                                        className="object-cover rounded-full w-full h-full"
                                     />
                                 </div>
                             </div>
@@ -154,9 +157,9 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
 
 
                 {/* Main Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="">
                     {/* Left Column - Doctor Info */}
-                    <div className="lg:col-span-1">
+                    <div className="">
                         <div className="bg-white shadow-md rounded-xl overflow-hidden mb-6">
                             <div className="p-6">
                                 <h2 className="text-lg font-bold text-gray-900 mb-4">About Dr. {doctor.name.split(' ')[0]}</h2>
@@ -193,9 +196,10 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                             </div>
                         </div>
                     </div>
+                    
 
                     {/* Right Column - Appointment Booking */}
-                    <div className="lg:col-span-2">
+                    <div className="my-10">
                         {bookingSuccess ? (
                             <div className="bg-white shadow-md rounded-xl overflow-hidden">
                                 <div className="bg-green-50 px-6 py-8 text-center">
@@ -272,178 +276,187 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                             Book an Appointment
                                         </h2>
                                         <p className="mt-2 text-sm text-gray-600">Select a date and time slot to schedule your appointment with Dr. {doctor.name}</p>
+                                        <div className="mt-12">
+                                            { 
+                                                !bookNow ?  (<Button onClick={() => setBookNow(true)} className="text-lg font-bold text-white bg-[#9871ff] py-6 shadow-lg" > Book Appointment </Button>
+                                                ) : null
+                                            }
+                                        </div>
                                     </div>
                                 </div>
+                                { bookNow ? (<>
+                                    <div className="border-b border-gray-200 overflow-x-auto">
+                                        <div className="flex whitespace-nowrap min-w-full overflow-x-auto scrollbar-hide pb-1">
+                                            {dateLabels.map(dateLabel => {
+                                                const date = new Date(dateLabel);
+                                                const isToday = date.toDateString() === new Date().toDateString();
+                                                const isSelected = dateLabel === selectedDate;
 
-                                <div className="border-b border-gray-200 overflow-x-auto">
-                                    <div className="flex whitespace-nowrap min-w-full overflow-x-auto scrollbar-hide pb-1">
-                                        {dateLabels.map(dateLabel => {
-                                            const date = new Date(dateLabel);
-                                            const isToday = date.toDateString() === new Date().toDateString();
-                                            const isSelected = dateLabel === selectedDate;
-
-                                            return (
-                                                <button
-                                                    key={dateLabel}
-                                                    onClick={() => setSelectedDate(dateLabel)}
-                                                    className={`py-4 px-3 text-center focus:outline-none transition w-24 flex-shrink-0 ${
-                                                        isSelected
-                                                            ? 'border-b-2 border-blue-600 text-blue-600 font-medium'
-                                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    <p className="font-medium">
-                                                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                                                    </p>
-                                                    <p className={`text-lg mt-1 ${isToday ? 'bg-blue-100 text-blue-800 rounded-full px-2 py-0.5 text-sm font-medium' : ''}`}>
-                                                        {date.toLocaleDateString('en-US', { day: 'numeric' })}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        {date.toLocaleDateString('en-US', { month: 'short' })}
-                                                    </p>
-                                                </button>
-                                            );
-                                        })}
+                                                return (
+                                                    <button
+                                                        key={dateLabel}
+                                                        onClick={() => setSelectedDate(dateLabel)}
+                                                        className={`py-4 px-3 text-center focus:outline-none transition w-24 flex-shrink-0 ${
+                                                            isSelected
+                                                                ? 'border-b-2 border-blue-600 text-blue-600 font-medium'
+                                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        <p className="font-medium">
+                                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                        </p>
+                                                        <p className={`text-lg mt-1 ${isToday ? 'bg-blue-100 text-blue-800 rounded-full px-2 py-0.5 text-sm font-medium' : ''}`}>
+                                                            {date.toLocaleDateString('en-US', { day: 'numeric' })}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500 mt-1">
+                                                            {date.toLocaleDateString('en-US', { month: 'short' })}
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Time Slots Grid */}
-                                <div className="p-6">
-                                    <h3 className="text-gray-700 text-sm font-medium mb-4">Available time slots on {new Date(selectedDate || '').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+                                    {/* Time Slots Grid */}
+                                    <div className="p-6">
+                                        <h3 className="text-gray-700 text-sm font-medium mb-4">Available time slots on {new Date(selectedDate || '').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
 
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                        {schedulesForSelectedDate && schedulesForSelectedDate.length > 0 ? (
-                                            schedulesForSelectedDate.map(schedule => (
-                                                <button
-                                                    key={schedule.id}
-                                                    disabled={schedule.is_booked}
-                                                    onClick={() => !schedule.is_booked && handleScheduleSelect(schedule)}
-                                                    className={`py-3 px-4 rounded-lg border transition focus:outline-none text-center ${
-                                                        schedule.is_booked
-                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-                                                            : selectedSchedule?.id === schedule.id
-                                                                ? 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-200'
-                                                                : 'hover:bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center justify-center">
-                                                        <ClockIcon className={`h-4 w-4 mr-1.5 ${
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                            {schedulesForSelectedDate && schedulesForSelectedDate.length > 0 ? (
+                                                schedulesForSelectedDate.map(schedule => (
+                                                    <button
+                                                        key={schedule.id}
+                                                        disabled={schedule.is_booked}
+                                                        onClick={() => !schedule.is_booked && handleScheduleSelect(schedule)}
+                                                        className={`py-3 px-4 rounded-lg border transition focus:outline-none text-center ${
                                                             schedule.is_booked
-                                                                ? 'text-gray-400'
+                                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
                                                                 : selectedSchedule?.id === schedule.id
-                                                                    ? 'text-blue-600'
-                                                                    : 'text-gray-500'
-                                                        }`} />
-                                                        <span>
+                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-200'
+                                                                    : 'hover:bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-center">
+                                                            <ClockIcon className={`h-4 w-4 mr-1.5 ${
+                                                                schedule.is_booked
+                                                                    ? 'text-gray-400'
+                                                                    : selectedSchedule?.id === schedule.id
+                                                                        ? 'text-blue-600'
+                                                                        : 'text-gray-500'
+                                                            }`} />
+                                                            <span>
                                                           {format(new Date(schedule.start_time), 'h:mm a')}
                                                         </span>
-                                                                </div>
-                                                            {schedule.is_booked && ( 
-                                                                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                        </div>
+                                                        {schedule.is_booked && (
+                                                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
                                                           Booked
                                                         </span>
-                                                    )}
-                                                </button>
-                                            ))
-                                        ) : (
-                                            <div className="col-span-full text-center py-8">
-                                                <p className="text-gray-500">No available slots for this date. Please select another date.</p>
+                                                        )}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-full text-center py-8">
+                                                    <p className="text-gray-500">No available slots for this date. Please select another date.</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Appointment Details Form */}
+                                        {selectedSchedule && (
+                                            <div className="mt-8 pt-6 border-t border-gray-200">
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <label className="block text-md py-3 text-gray-700 font-bold mb-2">Appointment Type</label>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {/*<label*/}
+                                                            {/*    className={`border rounded-lg p-4 text-sm flex items-center cursor-pointer transition ${*/}
+                                                            {/*        appointmentType === 'VIRTUAL'*/}
+                                                            {/*            ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-200'*/}
+                                                            {/*            : 'hover:bg-gray-50'*/}
+                                                            {/*    }`}*/}
+                                                            {/*>*/}
+                                                            {/*    <input*/}
+                                                            {/*        type="radio"*/}
+                                                            {/*        name="appointmentType"*/}
+                                                            {/*        value="VIRTUAL"*/}
+                                                            {/*        checked={appointmentType === 'VIRTUAL'}*/}
+                                                            {/*        onChange={() => setAppointmentType('VIRTUAL')}*/}
+                                                            {/*        className="h-4 w-4 text-blue-600 focus:ring-blue-500"*/}
+                                                            {/*    />*/}
+                                                            {/*    <div className="ml-3 text-sm">*/}
+                                                            {/*        <span className="block text-gray-900 font-medium">Virtual Visit</span>*/}
+                                                            {/*        <span className="block text-gray-500 text-sm">Consult with the doctor online</span>*/}
+                                                            {/*    </div>*/}
+                                                            {/*    <VideoIcon className="ml-auto h-5 w-5 text-blue-500" />*/}
+                                                            {/*</label>*/}
+
+                                                            <label
+                                                                className={`border rounded-lg p-4 flex items-center cursor-pointer transition ${
+                                                                    appointmentType === 'IN_PERSON'
+                                                                        ? 'bg-green-50 border-green-500 ring-1 ring-green-200'
+                                                                        : 'hover:bg-gray-50'
+                                                                }`}
+                                                            >
+                                                                <input
+                                                                    type="radio"
+                                                                    name="appointmentType"
+                                                                    value="IN_PERSON"
+                                                                    checked={appointmentType === 'IN_PERSON'}
+                                                                    onChange={() => setAppointmentType('IN_PERSON')}
+                                                                    className="h-4 w-4 text-green-600 focus:ring-green-500"
+                                                                />
+                                                                <div className="ml-3 text-sm py-1">
+                                                                    <span className="block text-gray-900 font-medium">In Person Visit</span>
+                                                                    <span className="block text-gray-500 text-sm">Visit the doctor&#39;s office</span>
+                                                                </div>
+                                                                <UserIcon className="ml-auto h-5 w-5 text-green-500" />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label htmlFor="reason" className="block text-sm text-gray-700 font-medium mb-2">Reason for Visit</label>
+                                                        <textarea
+                                                            id="reason"
+                                                            value={appointmentReason}
+                                                            onChange={(e) => setAppointmentReason(e.target.value)}
+                                                            placeholder="Briefly describe your symptoms or reason for the appointment..."
+                                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                                            rows={4}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex justify-end">
+                                                        <button
+                                                            onClick={handleBookAppointment}
+                                                            disabled={isBooking || !appointmentReason.trim()}
+                                                            className={`inline-flex items-center justify-center py-3 px-6 rounded-lg font-medium transition ${
+                                                                isBooking || !appointmentReason.trim()
+                                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                            }`}
+                                                        >
+                                                            {isBooking ? (
+                                                                <>
+                                                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    Processing...
+                                                                </>
+                                                            ) : (
+                                                                'Confirm Appointment'
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
+                                </>) : null}
 
-                                    {/* Appointment Details Form */}
-                                    {selectedSchedule && (
-                                        <div className="mt-8 pt-6 border-t border-gray-200">
-                                            <div className="space-y-6">
-                                                <div>
-                                                    <label className="block text-md py-3 text-gray-700 font-bold mb-2">Appointment Type</label>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {/*<label*/}
-                                                        {/*    className={`border rounded-lg p-4 text-sm flex items-center cursor-pointer transition ${*/}
-                                                        {/*        appointmentType === 'VIRTUAL'*/}
-                                                        {/*            ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-200'*/}
-                                                        {/*            : 'hover:bg-gray-50'*/}
-                                                        {/*    }`}*/}
-                                                        {/*>*/}
-                                                        {/*    <input*/}
-                                                        {/*        type="radio"*/}
-                                                        {/*        name="appointmentType"*/}
-                                                        {/*        value="VIRTUAL"*/}
-                                                        {/*        checked={appointmentType === 'VIRTUAL'}*/}
-                                                        {/*        onChange={() => setAppointmentType('VIRTUAL')}*/}
-                                                        {/*        className="h-4 w-4 text-blue-600 focus:ring-blue-500"*/}
-                                                        {/*    />*/}
-                                                        {/*    <div className="ml-3 text-sm">*/}
-                                                        {/*        <span className="block text-gray-900 font-medium">Virtual Visit</span>*/}
-                                                        {/*        <span className="block text-gray-500 text-sm">Consult with the doctor online</span>*/}
-                                                        {/*    </div>*/}
-                                                        {/*    <VideoIcon className="ml-auto h-5 w-5 text-blue-500" />*/}
-                                                        {/*</label>*/}
-
-                                                        <label
-                                                            className={`border rounded-lg p-4 flex items-center cursor-pointer transition ${
-                                                                appointmentType === 'IN_PERSON'
-                                                                    ? 'bg-green-50 border-green-500 ring-1 ring-green-200'
-                                                                    : 'hover:bg-gray-50'
-                                                            }`}
-                                                        >
-                                                            <input
-                                                                type="radio"
-                                                                name="appointmentType"
-                                                                value="IN_PERSON"
-                                                                checked={appointmentType === 'IN_PERSON'}
-                                                                onChange={() => setAppointmentType('IN_PERSON')}
-                                                                className="h-4 w-4 text-green-600 focus:ring-green-500"
-                                                            />
-                                                            <div className="ml-3 text-sm py-1">
-                                                                <span className="block text-gray-900 font-medium">In Person Visit</span>
-                                                                <span className="block text-gray-500 text-sm">Visit the doctor&#39;s office</span>
-                                                            </div>
-                                                            <UserIcon className="ml-auto h-5 w-5 text-green-500" />
-                                                        </label>
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label htmlFor="reason" className="block text-sm text-gray-700 font-medium mb-2">Reason for Visit</label>
-                                                    <textarea
-                                                        id="reason"
-                                                        value={appointmentReason}
-                                                        onChange={(e) => setAppointmentReason(e.target.value)}
-                                                        placeholder="Briefly describe your symptoms or reason for the appointment..."
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                                        rows={4}
-                                                    />
-                                                </div>
-
-                                                <div className="flex justify-end">
-                                                    <button
-                                                        onClick={handleBookAppointment}
-                                                        disabled={isBooking || !appointmentReason.trim()}
-                                                        className={`inline-flex items-center justify-center py-3 px-6 rounded-lg font-medium transition ${
-                                                            isBooking || !appointmentReason.trim()
-                                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                        }`}
-                                                    >
-                                                        {isBooking ? (
-                                                            <>
-                                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                </svg>
-                                                                Processing...
-                                                            </>
-                                                        ) : (
-                                                            'Confirm Appointment'
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                              
                             </div>
                         )}
                     </div>

@@ -8,9 +8,6 @@ import PatientProfileImage from "@/components/patient/Profile";
 import Link from "next/link";
 
 
-
-
-
 export default function DoctorDashboard() {
 
     const [dashboardData, setDashboardData] = useState<AppointmentStats | null >(null);

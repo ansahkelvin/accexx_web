@@ -93,6 +93,8 @@ export default function SchedulesPage() {
     }, []);
 
     // Handle creating a new schedule
+// In the handleCreateSchedule function, modify the date parsing logic
+
     const handleCreateSchedule = async () => {
         setError(null);
 
@@ -105,16 +107,16 @@ export default function SchedulesPage() {
         // Convert startTime and endTime into proper Date objects
         const [startHours, startMinutes] = newSchedule.startTime.split(":").map(Number);
         const [endHours, endMinutes] = newSchedule.endTime.split(":").map(Number);
-        console.log(newSchedule)
 
-        // Create a Date object while keeping the correct day
-        const startDateTime = new Date(newSchedule.date);
-        startDateTime.setHours(startHours, startMinutes, 0, 0);
-        
+        // Parse the date correctly
+        // First get the date components from the date string which is in yyyy-MM-dd format
+        const [year, month, day] = newSchedule.date.split('-').map(Number);
 
-        const endDateTime = new Date(newSchedule.date);
-        endDateTime.setHours(endHours, endMinutes, 0, 0);
-        
+        // Create Date objects with the date properly formatted as day/month/year
+        // Note: In JavaScript Date, months are 0-indexed (0 = January, 11 = December)
+        const startDateTime = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+        const endDateTime = new Date(year, month - 1, day, endHours, endMinutes, 0, 0);
+
         // Validate time inputs
         if (startDateTime >= endDateTime) {
             setError("End time must be after start time");
@@ -129,6 +131,12 @@ export default function SchedulesPage() {
                 end_time: endDateTime,
                 is_booked: false
             };
+
+            console.log('Sending schedule with dates:', {
+                startDate: startDateTime.toISOString(),
+                endDate: endDateTime.toISOString(),
+                originalDateString: newSchedule.date
+            });
 
             const response = await createSchedule(scheduleRequest);
             if (!response) {
@@ -145,7 +153,6 @@ export default function SchedulesPage() {
             setIsLoading(false);
         }
     };
-
     // Filter schedules for the selected date
     const filteredSchedules = schedules.filter(schedule => {
         const scheduleDate = new Date(schedule.start_time);

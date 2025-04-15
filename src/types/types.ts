@@ -76,6 +76,7 @@ export interface MedicalAppointment {
     doctor_specialization: string;
     patient_name: string;
     patient_image_url?: string;
+    has_review: boolean;
 }
 
 
@@ -198,3 +199,4 @@ export interface DoctorDetails {
     role: string;
     email: string;
 }
+

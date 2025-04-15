@@ -134,7 +134,7 @@ export async function fetchNearbyDoctors(): Promise<NearbyDoctor[] | null> {
             return null;
         }
 
-        const response = await fetch(`${BASE_URL}/doctors/nearby?latitude=5.632007&longitude=-0.169361&radius=70`, {
+        const response = await fetch(`${BASE_URL}/doctors/nearby?latitude=51.5191327&longitude=-0.146291&radius=70`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

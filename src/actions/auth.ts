@@ -102,6 +102,7 @@ export async function logoutAction() {
 
 export async function registerPatient(formData: FormData) {
     try {
+        
         const response = await fetch(`${BASE_URL}/auth/patient/register`, {
             method: 'POST',
             body: formData,

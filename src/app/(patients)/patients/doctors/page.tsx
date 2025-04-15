@@ -1,17 +1,9 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { Search, MapPin, Star, ChevronRight, Award, Stethoscope } from 'lucide-react';
-import Image from "next/image";
-import {
-    fetchAllDoctors,
-    fetchNearbyDoctors,
-    fetchTopDoctors,
-} from "@/app/actions/user";
-import Link from "next/link";
+"use client"
+import DoctorCard from "@/components/card/DoctorCard";
+import {Award, ChevronRight, MapPin, Search, Stethoscope} from "lucide-react";
+import {useEffect, useState} from "react";
 import {AllDoctor, NearbyDoctor, TopDoctor} from "@/types/types";
-import {Button} from "@/components/ui/button";
-
+import {fetchAllDoctors, fetchNearbyDoctors, fetchTopDoctors} from "@/app/actions/user";
 
 export default function DoctorsPage() {
     // CSS for hiding scrollbars but enabling scroll
@@ -105,7 +97,7 @@ export default function DoctorsPage() {
     });
 
     return (
-        <div className="min-h-screen ">
+        <div className="min-h-screen bg-gray-50">
             <style jsx global>{scrollbarHideStyles}</style>
 
             {/* Header with modern purple */}
@@ -133,10 +125,10 @@ export default function DoctorsPage() {
             </header>
 
             {/* Main content */}
-            <main className="max-w-6xl py-6 ">
+            <main className="max-w-6xl mx-auto px-4 py-6">
                 {/* Specialty filters */}
-                <div className="mb-6 overflow-x-auto scrollbar-hide">
-                    <div className="flex space-x-2 pb-2">
+                <div className="mb-6 overflow-x-auto scrollbar-hide -mx-4">
+                    <div className="flex space-x-2 px-4 pb-2">
                         {specialties.map(specialty => (
                             <button
                                 key={specialty}
@@ -153,82 +145,19 @@ export default function DoctorsPage() {
                     </div>
                 </div>
 
-                {/* If search is active, show results in a single column */}
+                {/* If search is active, show results in a grid of cards */}
                 {(searchTerm.trim() !== '' || selectedSpecialty !== 'All') && (
                     <div className="mb-8">
                         <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                             <Search size={18} className="mr-2 text-[#9871ff]" />
                             {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Doctor' : 'Doctors'} Found
                         </h2>
+
                         {filteredDoctors.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredDoctors.map((doctor) => (
-                                        <tr key={doctor.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0">
-                                                        <Image
-                                                            width={40}
-                                                            height={40}
-                                                            className="h-10 w-10 rounded-full object-cover"
-                                                            src={doctor.profile_image}
-                                                            alt={doctor.name}
-                                                        />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-[#9871ff]">{doctor.specialization}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="flex mr-1">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <Star
-                                                                key={i}
-                                                                size={14}
-                                                                className={i < Math.floor(doctor.rating)
-                                                                    ? "text-[#ffc107] fill-[#ffc107]"
-                                                                    : "text-gray-300"}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <span className="text-sm text-gray-500">
-                                                            ({doctor.rating_count})
-                                                        </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500 flex items-center">
-                                                    <MapPin size={14} className="mr-1 text-[#9871ff]" />
-                                                    <span>{doctor.work_address}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <Button asChild className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
-                                                    <Link href={`/patients/doctors/${doctor.id}`}>
-                                                        Book
-                                                    </Link>
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {filteredDoctors.map(doctor => (
+                                    <DoctorCard key={doctor.id} doctor={doctor} />
+                                ))}
                             </div>
                         ) : (
                             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
@@ -250,34 +179,46 @@ export default function DoctorsPage() {
                 {/* Only show categories if not searching or filtering */}
                 {searchTerm.trim() === '' && selectedSpecialty === 'All' && (
                     <>
-                        {/* Top Rated Doctors - Horizontal Scrolling */}
+                        {/* Top Rated Doctors - Horizontal Scrolling Cards */}
                         <section className="mb-8">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
                                     <Award size={18} className="mr-2 text-[#9871ff]" />
                                     Top Rated Doctors
                                 </h2>
-                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
-                                    View all <ChevronRight size={16} className="ml-1" />
-                                </button>
+                                {/*<button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">*/}
+                                {/*    View all <ChevronRight size={16} className="ml-1" />*/}
+                                {/*</button>*/}
                             </div>
 
                             {isLoading.top ? (
-                                <div className="h-64 flex items-center justify-center">
-                                    <div className="animate-pulse flex space-x-4">
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="min-w-[280px] animate-pulse bg-white rounded-lg shadow-sm p-4">
+                                                <div className="flex items-center mb-4">
+                                                    <div className="rounded-full bg-gray-200 h-16 w-16"></div>
+                                                    <div className="ml-3 space-y-2 w-full">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3 mb-4">
+                                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                                                </div>
+                                                <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             ) : topDoctors.length > 0 ? (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4">
                                     <div className="flex px-4 pb-4 space-x-4">
                                         {topDoctors.map(doctor => (
-                                            <div key={doctor.id} className="min-w-[300px] max-w-[300px]">
-                                                <FeaturedDoctorCard
-                                                    doctor={doctor}
-                                                />
+                                            <div key={doctor.id} className="min-w-[280px] max-w-[300px]">
+                                                <DoctorCard doctor={doctor} />
                                             </div>
                                         ))}
                                     </div>
@@ -289,34 +230,46 @@ export default function DoctorsPage() {
                             )}
                         </section>
 
-                        {/* Nearby Doctors - Modern Grid */}
+                        {/* Nearby Doctors - Horizontal Scrolling Cards */}
                         <section className="mb-8">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
                                     <MapPin size={18} className="mr-2 text-[#9871ff]" />
                                     Doctors Near You
                                 </h2>
-                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
-                                    View all <ChevronRight size={16} className="ml-1" />
-                                </button>
+                                {/*<button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">*/}
+                                {/*    View all <ChevronRight size={16} className="ml-1" />*/}
+                                {/*</button>*/}
                             </div>
 
                             {isLoading.nearby ? (
-                                <div className="h-64 flex items-center justify-center">
-                                    <div className="animate-pulse flex space-x-4">
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
-                                        <div className="rounded-lg bg-gray-200 h-48 w-64"></div>
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="min-w-[280px] animate-pulse bg-white rounded-lg shadow-sm p-4">
+                                                <div className="flex items-center mb-4">
+                                                    <div className="rounded-full bg-gray-200 h-16 w-16"></div>
+                                                    <div className="ml-3 space-y-2 w-full">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3 mb-4">
+                                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                                                </div>
+                                                <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            ): nearbyDoctors.length > 0 ? (
+                            ) : nearbyDoctors.length > 0 ? (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4">
                                     <div className="flex px-4 pb-4 space-x-4">
                                         {nearbyDoctors.map(doctor => (
-                                            <div key={doctor.id} className="min-w-[350px] max-w-[280px]">
-                                                <NearbyDoctorCard
-                                                    doctor={doctor}
-                                                />
+                                            <div key={doctor.id} className="min-w-[280px] max-w-[300px]">
+                                                <DoctorCard doctor={doctor} />
                                             </div>
                                         ))}
                                     </div>
@@ -328,108 +281,49 @@ export default function DoctorsPage() {
                             )}
                         </section>
 
-                        {/* All Doctors - Table View */}
+                        {/* All Doctors - Horizontal Scrolling Cards */}
                         <section className="mb-8">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-medium text-gray-900 flex items-center">
                                     <Stethoscope size={18} className="mr-2 text-[#9871ff]" />
                                     All Doctors
                                 </h2>
-                                <button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">
-                                    View all <ChevronRight size={16} className="ml-1" />
-                                </button>
+                                {/*<button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">*/}
+                                {/*    View all <ChevronRight size={16} className="ml-1" />*/}
+                                {/*</button>*/}
                             </div>
 
                             {isLoading.all ? (
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="animate-pulse rounded-lg bg-white shadow overflow-hidden">
-                                            <div className="grid grid-cols-12">
-                                                <div className="col-span-4 sm:col-span-3 bg-gray-200 h-36"></div>
-                                                <div className="col-span-8 sm:col-span-9 p-4">
-                                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-1/4 mb-4"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-2/4 mb-4"></div>
-                                                    <div className="flex justify-between items-center mt-4">
-                                                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                                                        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="min-w-[280px] animate-pulse bg-white rounded-lg shadow-sm p-4">
+                                                <div className="flex items-center mb-4">
+                                                    <div className="rounded-full bg-gray-200 h-16 w-16"></div>
+                                                    <div className="ml-3 space-y-2 w-full">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
                                                     </div>
                                                 </div>
+                                                <div className="space-y-3 mb-4">
+                                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                                                </div>
+                                                <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             ) : allDoctors.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {allDoctors.slice(0, 3).map((doctor) => (
-                                            <tr key={doctor.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="h-10 w-10 flex-shrink-0">
-                                                            <Image
-                                                                width={40}
-                                                                height={40}
-                                                                className="h-10 w-10 rounded-full object-cover"
-                                                                src={doctor.profile_image}
-                                                                alt={doctor.name}
-                                                            />
-                                                        </div>
-                                                        <div className="ml-4">
-                                                            <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-[#9871ff]">{doctor.specialization}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="flex mr-1">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star
-                                                                    key={i}
-                                                                    size={14}
-                                                                    className={i < Math.floor(doctor.rating)
-                                                                        ? "text-[#ffc107] fill-[#ffc107]"
-                                                                        : "text-gray-300"}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <span className="text-sm text-gray-500">
-                                                                ({doctor.rating_count})
-                                                            </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500 flex items-center">
-                                                        <MapPin size={14} className="mr-1 text-[#9871ff]" />
-                                                        <span>{doctor.work_address}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <Button
-                                                        asChild
-                                                        className="bg-[#9871ff] text-white px-4 py-1 rounded hover:bg-[#8461ee] transition-colors">
-                                                        <Link href={`/patients/doctors/${doctor.id}`}>
-                                                            Book
-                                                        </Link>
-                                                    </Button>
-                                                </td>
-                                            </tr>
+                                <div className="overflow-x-auto scrollbar-hide -mx-4">
+                                    <div className="flex px-4 pb-4 space-x-4">
+                                        {allDoctors.map(doctor => (
+                                            <div key={doctor.id} className="min-w-[280px] max-w-[300px]">
+                                                <DoctorCard doctor={doctor} />
+                                            </div>
                                         ))}
-                                        </tbody>
-                                    </table>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
@@ -443,114 +337,3 @@ export default function DoctorsPage() {
         </div>
     );
 }
-
-// Featured Doctor Card (for top doctors)
-interface FeaturedDoctorCardProps {
-    doctor: TopDoctor;
-}
-
-const FeaturedDoctorCard: React.FC<FeaturedDoctorCardProps> = ({ doctor }) => {
-    return (
-            <Link
-                href={`/patients/doctors/${doctor.id}`}>
-                <div className="rounded-lg bg-white shadow-sm border border-gray-100 overflow-hidden h-full">
-                    {/* Card header */}
-                    <div className="p-4 border-b border-gray-100">
-                        <div className="flex items-center">
-                            <Image
-                                width={48}
-                                height={48}
-                                src={doctor.profile_image}
-                                alt={doctor.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                            />
-                            <div className="ml-3">
-                                <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
-                                <p className="text-[#9871ff] text-sm">{doctor.specialization}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-4">
-                        <div className="flex items-center mb-3">
-                            <div className="flex mr-2">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        size={16}
-                                        className={i < Math.floor(doctor.rating)
-                                            ? "text-[#ffc107] fill-[#ffc107]"
-                                            : "text-gray-200"}
-                                    />
-                                ))}
-                            </div>
-                            <span className="text-sm text-gray-500">
-                        {doctor.rating.toFixed(1)}
-                    </span>
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-600 mb-3">
-                            <MapPin size={16} className="mr-2 text-[#9871ff]" />
-                            <span className="truncate">{doctor.work_address}</span>
-                        </div>
-
-                        {doctor.rating >= 4.8 && (
-                            <div className="bg-[#f8f4ff] text-[#9871ff] text-sm rounded p-2 flex items-center mb-3">
-                                <Award size={16} className="mr-2" />
-                                <span>Top Rated Doctor</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Card footer */}
-                    <div className="p-4 mt-auto border-t border-gray-100">
-                        <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
-                            Book Appointment
-                        </button>
-                    </div>
-                </div>
-        </Link>
-       
-    );
-};
-
-// Nearby Doctor Card Component
-interface NearbyDoctorCardProps {
-    doctor: NearbyDoctor;
-}
-
-const NearbyDoctorCard: React.FC<NearbyDoctorCardProps> = ({ doctor }) => {
-    return (
-        <div className="bg-white  border-amber-50 shadow ">
-        <Link
-            href={`/patients/doctors/${doctor.id}`}
-            className="rounded-lg  mx-2  shadow-sm  overflow-hidden">
-            <div className="flex  p-4">
-                <Image
-                    width={64}
-                    height={64}
-                    src={doctor.profile_image}
-                    alt={doctor.name}
-                    className="w-16 h-16 rounded-full object-cover border border-gray-100"
-                />
-                <div className="ml-4">
-                    <h3 className="font-medium text-gray-800 text-lg">{doctor.name}</h3>
-                    <p className="text-[#9871ff] text-sm mb-2">{doctor.specialization}</p>
-
-                    <div className="flex items-center text-sm text-gray-600">
-                        <MapPin size={14} className="mr-1 text-[#9871ff]" />
-                        <span>{doctor.distance.toFixed(1)} km away</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="px-4 pb-4">
-                <button className="w-full bg-[#9871ff] text-white py-2 rounded hover:bg-[#8461ee] transition-colors">
-                    Book Appointment
-                </button>
-            </div>
-        </Link>
-        </div>
-    );
-};
