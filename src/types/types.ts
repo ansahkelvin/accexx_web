@@ -64,7 +64,7 @@ export interface MedicalAppointment {
     patient_id: string;
     schedule_id: string;
     appointment_time: string;
-    status: "Confirmed" | "Cancelled" | "Rescheduled" | "Completed" | "Pending";
+    status: "Confirmed" | "Canceled" | "Rescheduled" | "Completed" | "Pending";
     reason: string;
     appointment_type: "In person" | "Virtual" | "Home visit";
     meeting_link?: string;

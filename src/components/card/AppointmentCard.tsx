@@ -1,8 +1,7 @@
-import {Home, MapPin, Video, Star, CheckCircle} from "lucide-react";
+import { Home, MapPin, Video, Star, CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createChat } from "@/app/actions/chat";
-import Link from "next/link";
 import React, { useState } from "react";
 import {
     Dialog,
@@ -14,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { createReviewData, updateAppointmentStatus } from "@/app/actions/appointments";
-import {AppointmentStatus} from "@/types/types";
 
 interface Appointment {
     id: string;
@@ -22,7 +20,7 @@ interface Appointment {
     patient_id: string;
     schedule_id: string;
     appointment_time: string;
-    status: "Confirmed" | "Cancelled" | "Rescheduled" | "Completed" | "Pending";
+    status: "Confirmed" | "Canceled" | "Rescheduled" | "Completed" | "Pending";
     reason: string;
     appointment_type: "In person" | "Virtual" | "Home visit";
     meeting_link?: string;
@@ -35,7 +33,6 @@ interface Appointment {
     patient_name: string;
     patient_image_url?: string;
     has_review: boolean;
-
 }
 
 export interface ReviewData {
@@ -51,7 +48,7 @@ export default function AppointmentCard({
                                             formatDate,
                                             formatTime,
                                             getDaysUntil,
-                                            isPast = false
+                                            isPast = false,
                                         }: {
     appointment: Appointment;
     formatDate: (date: string) => string;
@@ -62,6 +59,7 @@ export default function AppointmentCard({
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [review, setReview] = useState("");
@@ -72,15 +70,15 @@ export default function AppointmentCard({
     const chatRequest = {
         patient_id: appointment.patient_id,
         doctor_id: appointment.doctor_id,
-        appointment_id: appointment.id
+        appointment_id: appointment.id,
     };
 
     // Get appropriate icon for appointment type
     const getTypeIcon = () => {
-        switch(appointment.appointment_type) {
-            case 'Virtual':
+        switch (appointment.appointment_type) {
+            case "Virtual":
                 return <Video size={16} className="text-blue-500" />;
-            case 'Home visit':
+            case "Home visit":
                 return <Home size={16} className="text-green-500" />;
             default:
                 return <MapPin size={16} className="text-red-500" />;
@@ -108,21 +106,19 @@ export default function AppointmentCard({
     };
 
     // Mark appointment as completed
-    const markAsCompleted = async () => {
+    const changeAppointmentStatus = async (status: string) => {
         if (isLoading) return;
 
         setIsLoading(true);
         try {
-            // Use the enum value COMPLETED instead of the string "Completed"
-            const response = await updateAppointmentStatus(appointment.id, AppointmentStatus.COMPLETED);
+            const response = await updateAppointmentStatus(appointment.id, status, appointment.schedule_id);
 
             if (!response.ok) {
-                throw new Error('Failed to mark appointment as completed');
+                throw new Error("Failed to update appointment status");
             }
 
-            // Update the UI or refresh the appointments list
-            router.refresh(); // This will refresh the current route and fetch fresh data
-            alert("Appointment marked as completed!");
+            // Force a hard refresh to ensure data is updated
+            window.location.href = "/patients/appointments";
         } catch (error) {
             console.error(error);
             alert("Failed to update appointment status. Please try again.");
@@ -130,6 +126,7 @@ export default function AppointmentCard({
             setIsLoading(false);
         }
     };
+
 
     // Handle review submission
     const handleSubmitReview = async () => {
@@ -142,22 +139,21 @@ export default function AppointmentCard({
                 patient_id: appointment.patient_id,
                 doctor_id: appointment.doctor_id,
                 rating,
-                review
+                review,
             };
 
             const response = await createReviewData(reviewData);
 
             if (!response.success) {
-                throw new Error('Failed to submit review');
+                throw new Error("Failed to submit review");
             }
 
-            // Close the dialog and show success notification
             setIsReviewOpen(false);
             setRating(0);
             setReview("");
 
-            // Refresh the page to show updated appointments list
-            router.refresh();
+            // Force a hard refresh to ensure data is updated
+            window.location.href = "/patients/appointments";
             alert("Thank you for your review!");
         } catch (error) {
             console.error(error);
@@ -169,11 +165,12 @@ export default function AppointmentCard({
 
     return (
         <>
-            <div className={`
+            <div
+                className={`
         bg-white rounded-lg overflow-hidden shadow-sm border transition-all h-full
-        ${isPast ? 'border-gray-100 opacity-80' : 'border-gray-200 hover:shadow-md'}
-      `}>
-
+        ${isPast ? "border-gray-100 opacity-80" : "border-gray-200 hover:shadow-md"}
+      `}
+            >
                 <div className="relative">
                     <div className="h-32 bg-gray-100">
                         {appointment.doctor_image_url ? (
@@ -205,12 +202,19 @@ export default function AppointmentCard({
 
                     {/* Status badge */}
                     <div className="absolute bottom-3 right-3">
-            <span className={`text-xs px-2 py-0.5 rounded-full bg-opacity-90 ${
-                appointment.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
-                    appointment.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                        appointment.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                            appointment.status === 'Completed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-            }`}>
+            <span
+                className={`text-xs px-2 py-0.5 rounded-full bg-opacity-90 ${
+                    appointment.status === "Confirmed"
+                        ? "bg-green-100 text-green-700"
+                        : appointment.status === "Pending"
+                            ? "bg-amber-100 text-amber-700"
+                            : appointment.status === "Canceled"
+                                ? "bg-red-100 text-red-700"
+                                : appointment.status === "Completed"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-gray-100 text-gray-700"
+                }`}
+            >
               {appointment.status}
             </span>
                     </div>
@@ -234,8 +238,10 @@ export default function AppointmentCard({
                     </div>
 
                     {/* Action buttons */}
-                    {!isPast && appointment.status !== 'Cancelled' && appointment.status !== 'Completed' && (
-                        appointment.appointment_type === 'Virtual' && appointment.meeting_link ? (
+                    {!isPast &&
+                        appointment.status !== "Canceled" &&
+                        appointment.status !== "Completed" &&
+                        (appointment.appointment_type === "Virtual" && appointment.meeting_link ? (
                             <a
                                 href={appointment.meeting_link}
                                 target="_blank"
@@ -254,17 +260,17 @@ export default function AppointmentCard({
                                 >
                                     Chat
                                 </Button>
-                                <Link href={`/appointments/${appointment.schedule_id}/reschedule`} className="flex-1">
-                                    <Button className="w-full px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 text-xs">
-                                        Reschedule
-                                    </Button>
-                                </Link>
+                                <Button
+                                    onClick={() => setIsCancelOpen(true)}
+                                    className="w-full flex-1 px-3 py-1.5 bg-red-600 rounded-md hover:bg-indigo-100 text-xs"
+                                >
+                                    Cancel
+                                </Button>
                             </div>
-                        )
-                    )}
+                        ))}
 
                     {/* Review button for past appointments with Completed status */}
-                    {isPast && appointment.status === 'Completed' && !appointment.has_review && (
+                    {isPast && appointment.status === "Completed" && !appointment.has_review && (
                         <Button
                             onClick={() => setIsReviewOpen(true)}
                             className="w-full px-3 py-1.5 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded-md text-xs flex items-center justify-center gap-1"
@@ -275,23 +281,34 @@ export default function AppointmentCard({
                     )}
 
                     {/* Already reviewed indicator */}
-                    {isPast && appointment.status === 'Completed' && appointment.has_review && (
+                    {isPast && appointment.status === "Completed" && appointment.has_review && (
                         <div className="w-full px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs flex items-center justify-center gap-1">
                             <Star size={14} className="text-yellow-500 fill-yellow-500" />
                             Review Submitted
                         </div>
                     )}
+
                     {/* Mark as completed button for past appointments with Pending or Confirmed status */}
-                    {isPast && (appointment.status === 'Pending' || appointment.status === 'Confirmed') && (
-                        <Button
-                            onClick={markAsCompleted}
-                            disabled={isLoading}
-                            className="w-full px-3 py-1.5 bg-[#9871ff] text-white hover:bg-[#8a61f9] rounded-md text-xs flex items-center justify-center gap-1"
-                        >
-                            <CheckCircle size={14} />
-                            {isLoading ? "Processing..." : "Mark as completed"}
-                        </Button>
-                    )}
+                    {isPast &&
+                        (appointment.status === "Pending" || appointment.status === "Confirmed") && (
+                            <Button
+                                onClick={() => changeAppointmentStatus("COMPLETED")}
+                                disabled={isLoading}
+                                className="w-full px-3 py-1.5 bg-[#9871ff] text-white hover:bg-[#8a61f9] rounded-md text-xs flex items-center justify-center gap-1"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 size={14} className="animate-spin mr-1" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle size={14} />
+                                        Mark as completed
+                                    </>
+                                )}
+                            </Button>
+                        )}
                 </div>
             </div>
 
@@ -349,9 +366,54 @@ export default function AppointmentCard({
                         <Button
                             onClick={handleSubmitReview}
                             disabled={isSubmitting || rating === 0}
-                            className={`${rating === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white`}
+                            className={`${
+                                rating === 0
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-purple-600 hover:bg-purple-700"
+                            } text-white`}
                         >
-                            {isSubmitting ? "Submitting..." : "Submit Review"}
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 size={14} className="animate-spin mr-1" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                "Submit Review"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Cancel Appointment</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to cancel this appointment?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCancelOpen(false)} className="mr-2">
+                            No, Keep Appointment
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                await changeAppointmentStatus("CANCELED");
+                                setIsCancelOpen(false);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 size={14} className="animate-spin mr-1" />
+                                    Processing...
+                                </>
+                            ) : (
+                                "Yes, Cancel It"
+                            )}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -26,14 +26,14 @@ export interface Chat {
     last_message_time: string;
 }
 
-export interface ChatMessage {
-    id: string;
-    chat_id: string;
-    sender_id: string;
-    content: string;
-    timestamp: string;
-    sender_type?: 'doctor' | 'patient';
-}
+// export interface ChatMessage {
+//     id: string;
+//     chat_id: string;
+//     sender_id: string;
+//     content: string;
+//     timestamp: string;
+//     sender_type?: 'doctor' | 'patient';
+// }
 
 export interface ChatRequest {
     appointment_id: string;
@@ -72,4 +72,51 @@ export interface UIChat {
     messages: UIChatMessage[];
     unread: number;
     lastMessageTime: string;
+}
+// types/chats.ts
+
+export interface ChatRequest {
+    appointment_id: string;
+    patient_id: string;
+    doctor_id: string;
+}
+
+export interface Chat {
+    id: string;
+    appointment_id: string;
+    patient_id: string;
+    doctor_id: string;
+    created_at: string;
+    updated_at: string;
+    doctor_name: string;
+    doctor_profile_image: string;
+    last_message: string;
+    last_message_time: string;
+}
+
+export interface ChatMessage {
+    id: string;
+    chat_id: string;
+    sender_id: string;
+    content: string;
+    timestamp: string;
+    sender_type: 'patient' | 'doctor';
+}
+
+export interface WebSocketMessage {
+    id?: string;
+    chat_id?: string;
+    sender_id?: string;
+    content: string;
+    timestamp?: string;
+    sender_type?: 'patient' | 'doctor';
+    sender_name?: string;
+    sender_profile_image?: string;
+    error?: string;
+}
+
+export interface ConnectionStatus {
+    isConnected: boolean;
+    reconnecting: boolean;
+    attempts: number;
 }

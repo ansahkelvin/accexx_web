@@ -4,7 +4,6 @@ import {
     Calendar,
     AlertCircle,
     Search, RefreshCw,
-    ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { fetchPatientAppointment } from "@/app/actions/user";
@@ -17,7 +16,7 @@ interface Appointment {
     patient_id: string;
     schedule_id: string;
     appointment_time: string;
-    status: "Confirmed" | "Cancelled" | "Rescheduled" | "Completed" | "Pending";
+    status: "Confirmed" | "Canceled" | "Rescheduled" | "Completed" | "Pending";
     reason: string;
     appointment_type: "In person" | "Virtual" | "Home visit";
     meeting_link?: string;
@@ -167,11 +166,11 @@ export default function AppointmentsPage() {
 
     // Get upcoming and past appointments
     const upcomingAppointments = filteredAppointments
-        .filter(app => !selectedDate && getDaysUntil(app.appointment_time) >= 0)
+        .filter(app => !selectedDate && new Date(app.appointment_time).getTime() > Date.now())
         .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
 
     const pastAppointments = filteredAppointments
-        .filter(app => getDaysUntil(app.appointment_time) < 0)
+        .filter(app => new Date(app.appointment_time).getTime() <= Date.now())
         .sort((a, b) => new Date(b.appointment_time).getTime() - new Date(a.appointment_time).getTime());
 
     return (
@@ -214,7 +213,7 @@ export default function AppointmentsPage() {
                                 <option value="">All Statuses</option>
                                 <option value="Confirmed">Confirmed</option>
                                 <option value="Pending">Pending</option>
-                                <option value="Cancelled">Cancelled</option>
+                                <option value="Canceled">Canceled</option>
                                 <option value="Completed">Completed</option>
                             </select>
 
@@ -291,11 +290,11 @@ export default function AppointmentsPage() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-medium text-gray-800">Past Appointments</h2>
 
-                                {pastAppointments.length > 3 && (
-                                    <Link href="/appointments/history" className="flex items-center text-sm text-indigo-600 hover:text-indigo-800">
-                                        View all <ChevronRight size={16} />
-                                    </Link>
-                                )}
+                                {/*{pastAppointments.length > 3 && (*/}
+                                {/*    <Link href="/appointments/history" className="flex items-center text-sm text-indigo-600 hover:text-indigo-800">*/}
+                                {/*        View all <ChevronRight size={16} />*/}
+                                {/*    </Link>*/}
+                                {/*)}*/}
                             </div>
 
                             {/* Scrollable container */}

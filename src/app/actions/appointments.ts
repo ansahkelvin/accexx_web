@@ -32,13 +32,13 @@ export const createReviewData = async (rawData: ReviewData) => {
     }
 }
 
-export const updateAppointmentStatus = async (appointmentId: string, status: string) => {
+export const updateAppointmentStatus = async (appointmentId: string, status: string, scheduleId: string) => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
 
     try {
         // Using query parameter instead of body since the backend expects it as a query parameter
-        const response = await fetch(`${BASE_URL}/appointments/${appointmentId}/status?appointment_status=${status}`, {
+        const response = await fetch(`${BASE_URL}/appointments/${appointmentId}/status?appointment_status=${status}&schedule_id=${scheduleId}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',

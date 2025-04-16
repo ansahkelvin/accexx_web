@@ -10,6 +10,7 @@ export default async function DoctorDetailPage({ params }: { params: Promise<{ s
     // Wait for params to resolve
     const resolvedParams = await params;
     const doctorId = resolvedParams.slug;
+    
     if (!doctorId) return notFound();
     const cookie = await cookies();
     const patientId = cookie.get("user_id")?.value;
@@ -17,6 +18,7 @@ export default async function DoctorDetailPage({ params }: { params: Promise<{ s
     if (!patientId) return notFound();
 
     const doctorInfo  = await fetchDoctorDetails(doctorId);
+    console.log(doctorInfo);
     if (!doctorInfo) {
         return notFound();
     }

@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast'; // or your preferred toast library
 import { useState } from 'react';
 import Image from 'next/image';
 import { CalendarIcon, MapPinIcon, ClockIcon, VideoIcon, UserIcon, PhoneIcon, MailIcon, CheckCircleIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import {format, parseISO} from 'date-fns';
 import {AppointmentRequestData, AppointmentStatus, AppointmentType, DoctorDetails, Schedule} from "@/types/types";
 import {bookAppointment} from "@/app/actions/user";
 import {useRouter} from "next/navigation";
@@ -21,6 +21,8 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [bookNow, setBookNow] = useState(false);
     const router = useRouter();
+    console.log(doctor.schedule)
+    
 
 
 
@@ -30,7 +32,11 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
 
         const grouped: Record<string, Schedule[]> = {};
         doctor.schedule.forEach(schedule => {
-            const date = new Date(schedule.start_time).toLocaleDateString();
+            const date = new Date(schedule.start_time).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
             if (!grouped[date]) {
                 grouped[date] = [];
             }
@@ -162,7 +168,7 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                     <div className="">
                         <div className="bg-white shadow-md rounded-xl overflow-hidden mb-6">
                             <div className="p-6">
-                                <h2 className="text-lg font-bold text-gray-900 mb-4">About Dr. {doctor.name.split(' ')[0]}</h2>
+                                <h2 className="text-lg font-bold text-gray-900 mb-4">About Dr. {doctor.name.split(' ')[1]}</h2>
                                 <p className="text-gray-700 leading-relaxed text-sm">{doctor.bio}</p>
                             </div>
                         </div>
@@ -208,7 +214,7 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                     </div>
                                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Appointment Confirmed!</h2>
                                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                        Your appointment with Dr. {doctor.name} has been scheduled. You will receive a confirmation email shortly.
+                                        Your appointment with {doctor.name} has been scheduled. You will receive a confirmation email shortly.
                                     </p>
 
                                     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 max-w-md mx-auto text-left">
@@ -275,7 +281,7 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                             <CalendarIcon className="h-6 w-6 mr-2 text-blue-600" />
                                             Book an Appointment
                                         </h2>
-                                        <p className="mt-2 text-sm text-gray-600">Select a date and time slot to schedule your appointment with Dr. {doctor.name}</p>
+                                        <p className="mt-2 text-sm text-gray-600">Select a date and time slot to schedule your appointment with {doctor.name}</p>
                                         <div className="mt-12">
                                             { 
                                                 !bookNow ?  (<Button onClick={() => setBookNow(true)} className="text-lg font-bold text-white bg-[#9871ff] py-6 shadow-lg" > Book Appointment </Button>
@@ -319,7 +325,8 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
 
                                     {/* Time Slots Grid */}
                                     <div className="p-6">
-                                        <h3 className="text-gray-700 text-sm font-medium mb-4">Available time slots on {new Date(selectedDate || '').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+                                        <h3 className="text-gray-700 text-sm font-medium mb-4">  Available time slots on {new Date(selectedDate || '').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                        </h3>
 
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                             {schedulesForSelectedDate && schedulesForSelectedDate.length > 0 ? (
@@ -344,15 +351,14 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                                                         ? 'text-blue-600'
                                                                         : 'text-gray-500'
                                                             }`} />
-                                                            <span>
-                                                          {format(new Date(schedule.start_time), 'h:mm a')}
-                                                        </span>
+                                                            <span>{format(parseISO(schedule.start_time), 'h:mm a')}</span>
+
                                                         </div>
                                                         {schedule.is_booked && (
                                                             <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                          Booked
+                                                            Booked
                                                         </span>
-                                                        )}
+                                                                                            )}
                                                     </button>
                                                 ))
                                             ) : (

@@ -81,14 +81,14 @@ export default async function DashboardPage() {
                     <div>
                         <p className="text-blue-100 text-sm">Next Appointment</p>
                         <h3 className="text-lg md:text-xl font-bold mt-1">
-                            {formatDate(latestAppointment?.appointment_time, {
+                            {latestAppointment ? formatDate(latestAppointment?.appointment_time, {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
                                 hour: "numeric",
-                            })}
+                            }) : "No new upcoming appointment"}
                         </h3>
-                        <p className="text-sm text-blue-100 mt-1">{latestAppointment?.appointment_location ?? "Location not available"}</p>
+                        <p className="text-sm text-blue-100 mt-1">{latestAppointment?.appointment_location ?? ""}</p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
                         <Calendar className="h-6 md:h-8 w-6 md:w-8" />
@@ -97,9 +97,9 @@ export default async function DashboardPage() {
 
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white p-4 md:p-6 shadow-lg flex items-center justify-between">
                     <div>
-                        <p className="text-purple-100 text-sm">Upcoming Schedule</p>
+                        <p className="text-purple-100 text-sm">Total Appointments</p>
                         <h3 className="text-lg md:text-xl font-bold mt-1">{appointmentCount} Appointments</h3>
-                        <p className="text-sm text-purple-100 mt-1">For the next 30 days</p>
+                        <p className="text-sm text-purple-100 mt-1">Since Joining</p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
                         <Clock className="h-6 md:h-8 w-6 md:w-8" />

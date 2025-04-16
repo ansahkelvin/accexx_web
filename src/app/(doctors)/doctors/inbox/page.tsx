@@ -1,9 +1,10 @@
 "use client"
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Filter } from 'lucide-react';
 import Image from "next/image";
-import { getUserChats, getChatMessages, sendMessage } from "@/app/actions/chat";
-import { Chat, ChatMessage } from "@/types/chats";
+import { getUserChats, getChatMessages } from "@/app/actions/chat";
+import { Chat, ChatMessage, WebSocketMessage } from "@/types/chats";
+import chatWebSocketService from "@/service/sockets";
 
 export default function InboxPage() {
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -14,6 +15,12 @@ export default function InboxPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [sendingMessage, setSendingMessage] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [socketConnected, setSocketConnected] = useState<boolean>(false);
+
+    // Refs for cleanup functions
+    const messageHandlerCleanupRef = useRef<(() => void) | null>(null);
+    const connectionHandlerCleanupRef = useRef<(() => void) | null>(null);
+    const errorHandlerCleanupRef = useRef<(() => void) | null>(null);
 
     const fetchUserChats = async () => {
         setLoading(true);
@@ -46,35 +53,129 @@ export default function InboxPage() {
 
     useEffect(() => {
         fetchUserChats();
+
+        // Cleanup function to disconnect WebSocket when component unmounts
+        return () => {
+            chatWebSocketService.disconnect();
+
+            // Clean up all handlers
+            if (messageHandlerCleanupRef.current) messageHandlerCleanupRef.current();
+            if (connectionHandlerCleanupRef.current) connectionHandlerCleanupRef.current();
+            if (errorHandlerCleanupRef.current) errorHandlerCleanupRef.current();
+        };
     }, []);
 
+    // Setup WebSocket connection and handlers when a chat is selected
+    useEffect(() => {
+        if (!selectedChat) return;
+
+        // Clean up previous handlers
+        if (messageHandlerCleanupRef.current) messageHandlerCleanupRef.current();
+        if (connectionHandlerCleanupRef.current) connectionHandlerCleanupRef.current();
+        if (errorHandlerCleanupRef.current) errorHandlerCleanupRef.current();
+
+        // Get authentication token from server
+        const setupWebSocket = async () => {
+            try {
+                // Import the server action to get the auth token
+                const { getAuthToken } = await import('@/app/actions/auth');
+                const { token, userId } = await getAuthToken();
+                console.log(userId);
+
+                if (!token) {
+                    setError("Authentication required");
+                    return;
+                }
+
+                // Setup message handler
+                messageHandlerCleanupRef.current = chatWebSocketService.onMessage((data: WebSocketMessage) => {
+                    // If there's an error message
+                    if (data.error) {
+                        console.error("WebSocket error:", data.error);
+                        setError(data.error);
+                        return;
+                    }
+
+                    // Handle incoming message
+                    if (data.id && data.chat_id && data.sender_id && data.timestamp && data.sender_type) {
+                        const newMessage: ChatMessage = {
+                            id: data.id,
+                            chat_id: data.chat_id,
+                            sender_id: data.sender_id,
+                            content: data.content,
+                            timestamp: data.timestamp,
+                            sender_type: data.sender_type
+                        };
+
+                        // Add message to the chat (avoiding duplicates)
+                        setMessages(prev => {
+                            // Check if message already exists
+                            if (prev.some(msg => msg.id === newMessage.id)) {
+                                return prev;
+                            }
+                            return [...prev, newMessage];
+                        });
+
+                        // Update chat list with the latest message
+                        updateChatWithLatestMessage(data);
+                    }
+                });
+
+                // Setup connection handler
+                connectionHandlerCleanupRef.current = chatWebSocketService.onConnectionChange((isConnected: boolean) => {
+                    setSocketConnected(isConnected);
+                });
+
+                // Setup error handler
+                errorHandlerCleanupRef.current = chatWebSocketService.onError((errorMessage: string) => {
+                    setError(errorMessage);
+                });
+
+                // Connect to chat with the token from server
+                chatWebSocketService.connect(selectedChat.id, `Bearer ${token}`);
+            } catch (error) {
+                console.error("Error getting authentication token:", error);
+                setError("Failed to authenticate. Please refresh the page.");
+            }
+        };
+
+        // Execute the async function
+        setupWebSocket();
+
+    }, [selectedChat]);
+
+    // Update chat list when a new message arrives
+    const updateChatWithLatestMessage = (messageData: WebSocketMessage) => {
+        if (!messageData.chat_id || !messageData.content || !messageData.timestamp) return;
+
+        setChats(prevChats =>
+            prevChats.map(chat => {
+                if (chat.id === messageData.chat_id) {
+                    return {
+                        ...chat,
+                        last_message: messageData.content,
+                        last_message_time: messageData.timestamp as string
+                    };
+                }
+                return chat;
+            })
+        );
+    };
+
     const handleSendMessage = async () => {
-        if (messageInput.trim() === "" || !selectedChat || sendingMessage) return;
+        if (messageInput.trim() === "" || !selectedChat || sendingMessage || !socketConnected) return;
 
         setSendingMessage(true);
         try {
-            // Optimistically update UI
-            const newMessage: ChatMessage = {
-                id: `temp-${Date.now()}`,
-                chat_id: selectedChat.id,
-                sender_id: "current-user", // Will be replaced by actual ID from server
-                content: messageInput,
-                timestamp: new Date().toISOString(),
-                sender_type: 'patient'
-            };
+            // Send message through WebSocket service
+            const success = chatWebSocketService.sendMessage(messageInput);
 
-            // Add to messages
-            setMessages(prev => [...prev, newMessage]);
-
-            // Clear input
-            setMessageInput("");
-
-            // Send to server
-            await sendMessage(selectedChat.id, messageInput);
-
-            // Reload messages to get the actual saved message
-            await loadChatMessages(selectedChat.id);
-
+            if (success) {
+                // Clear input (actual message will be added when it comes back through the socket)
+                setMessageInput("");
+            } else {
+                setError("Failed to send message. Please try again.");
+            }
         } catch (error) {
             console.error("Error sending message:", error);
             setError("Failed to send message. Please try again.");
@@ -94,13 +195,8 @@ export default function InboxPage() {
         loadChatMessages(chat.id);
     };
 
-    // Function to determine if a message is from the current user
-    const isCurrentUserMessage = (message: ChatMessage) => {
-        return message.sender_type === 'patient';
-    };
-
     return (
-        <div className="flex h-full flex-1 bg-gray-50 overflow-hidden">
+        <div className="flex h-[calc(100vh-6rem)] flex-1 bg-gray-50 overflow-hidden">
             <div
                 className={`
           w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white
@@ -151,11 +247,11 @@ export default function InboxPage() {
                                         <div className="relative flex-shrink-0">
                                             <div className="w-12 h-12 rounded-full  overflow-hidden bg-gray-200">
                                                 <Image
-                                                    src={chat.patient_profile_image || '/api/placeholder/100/100'}
+                                                    src={chat.patient_profile_image}
                                                     alt={chat.patient_name}
                                                     className="object-cover w-full h-full"
                                                     width={408}
-                                                    height={408}
+                                                    height={508}
                                                 />
                                             </div>
                                         </div>
@@ -198,7 +294,7 @@ export default function InboxPage() {
                             <div className="flex items-center">
                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
                                     <Image
-                                        src={selectedChat.patient_profile_image}
+                                        src={selectedChat.patient_profile_image || '/api/placeholder/100/100'}
                                         alt={selectedChat.patient_name}
                                         className="object-cover w-full h-full"
                                         width={450}
@@ -207,6 +303,19 @@ export default function InboxPage() {
                                 </div>
                                 <div className="ml-3">
                                     <h3 className="font-semibold text-gray-900">{selectedChat.patient_name}</h3>
+                                    <div className="text-xs text-gray-500">
+                                        {socketConnected ? (
+                                            <span className="flex items-center">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                                You are online
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center">
+                                                <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                                                Offline
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -235,13 +344,13 @@ export default function InboxPage() {
                                     messages.map((message) => (
                                         <div
                                             key={message.id}
-                                            className={`flex ${isCurrentUserMessage(message) ? "justify-end" : "justify-start"}`}
+                                            className={`flex ${message.sender_type === "doctor" ? "justify-end" : "justify-start"}`}
                                         >
-                                            {!isCurrentUserMessage(message) && (
+                                            {message.sender_type === "patient" && (
                                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 mr-2 self-end mb-1 hidden sm:block">
                                                     <Image
-                                                        src={selectedChat.doctor_profile_image || '/api/placeholder/100/100'}
-                                                        alt={selectedChat.doctor_name || 'Doctor'}
+                                                        src={selectedChat.patient_profile_image || '/api/placeholder/100/100'}
+                                                        alt={selectedChat.patient_name}
                                                         className="object-cover"
                                                         width={32}
                                                         height={32}
@@ -251,7 +360,7 @@ export default function InboxPage() {
 
                                             <div
                                                 className={`max-w-xs sm:max-w-md lg:max-w-lg p-3 rounded-lg ${
-                                                    isCurrentUserMessage(message)
+                                                    message.sender_type === "patient"
                                                         ? "bg-blue-500 text-white rounded-br-none"
                                                         : "bg-white text-gray-800 rounded-bl-none shadow-sm"
                                                 }`}
@@ -259,14 +368,14 @@ export default function InboxPage() {
                                                 <p className="text-sm">{message.content}</p>
                                                 <p
                                                     className={`text-xs mt-1 ${
-                                                        isCurrentUserMessage(message) ? "text-blue-100" : "text-gray-500"
+                                                        message.sender_type === "doctor" ? "text-black" : "text-white"
                                                     }`}
                                                 >
                                                     {new Date(message.timestamp).toLocaleString()}
                                                 </p>
                                             </div>
 
-                                            {!isCurrentUserMessage(message) && (
+                                            {message.sender_type === "doctor" && (
                                                 <div className="w-8 h-8 self-end mb-1 ml-2 hidden sm:block"></div>
                                             )}
                                         </div>
@@ -283,7 +392,9 @@ export default function InboxPage() {
                                 </button>
                                 <input
                                     type="text"
-                                    placeholder="Type your message..."
+                                    placeholder={socketConnected
+                                        ? "Type your message..."
+                                        : "Connecting to chat..."}
                                     className="flex-1 p-2 mx-2 rounded-full border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                                     value={messageInput}
                                     onChange={(e) => setMessageInput(e.target.value)}
@@ -292,16 +403,16 @@ export default function InboxPage() {
                                             handleSendMessage();
                                         }
                                     }}
-                                    disabled={sendingMessage}
+                                    disabled={sendingMessage || !socketConnected}
                                 />
                                 <button
                                     className={`p-2 rounded-full ${
-                                        messageInput.trim() && !sendingMessage
+                                        messageInput.trim() && !sendingMessage && socketConnected
                                             ? "bg-blue-500 hover:bg-blue-600"
                                             : "bg-gray-300"
                                     } text-white transition-colors`}
                                     onClick={handleSendMessage}
-                                    disabled={!messageInput.trim() || sendingMessage}
+                                    disabled={!messageInput.trim() || sendingMessage || !socketConnected}
                                 >
                                     {sendingMessage ? (
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -310,6 +421,11 @@ export default function InboxPage() {
                                     )}
                                 </button>
                             </div>
+                            {!socketConnected && selectedChat && (
+                                <div className="text-center text-red-500 text-xs mt-1">
+                                    Not connected. Please wait or refresh the page.
+                                </div>
+                            )}
                         </div>
                     </>
                 ) : (
