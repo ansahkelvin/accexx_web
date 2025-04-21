@@ -1,6 +1,6 @@
 "use client"
 import DoctorCard from "@/components/card/DoctorCard";
-import {Award, ChevronRight, MapPin, Search, Stethoscope} from "lucide-react";
+import {Award, MapPin, Search, Stethoscope} from "lucide-react";
 import {useEffect, useState} from "react";
 import {AllDoctor, NearbyDoctor, TopDoctor} from "@/types/types";
 import {fetchAllDoctors, fetchNearbyDoctors, fetchTopDoctors} from "@/app/actions/user";
@@ -125,7 +125,7 @@ export default function DoctorsPage() {
             </header>
 
             {/* Main content */}
-            <main className="max-w-6xl mx-auto px-4 py-6">
+            <main className="max-w-6xl mx-auto  py-6">
                 {/* Specialty filters */}
                 <div className="mb-6 overflow-x-auto scrollbar-hide -mx-4">
                     <div className="flex space-x-2 px-4 pb-2">
@@ -317,7 +317,7 @@ export default function DoctorsPage() {
                                 </div>
                             ) : allDoctors.length > 0 ? (
                                 <div className="overflow-x-auto scrollbar-hide -mx-4">
-                                    <div className="flex px-4 pb-4 space-x-4">
+                                    <div className="flex pb-4 space-x-4">
                                         {allDoctors.map(doctor => (
                                             <div key={doctor.id} className="min-w-[280px] max-w-[300px]">
                                                 <DoctorCard doctor={doctor} />
