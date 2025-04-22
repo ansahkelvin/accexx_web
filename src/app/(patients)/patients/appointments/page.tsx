@@ -8,6 +8,8 @@ import {
 import Link from 'next/link';
 import { fetchPatientAppointment } from "@/app/actions/user";
 import AppointmentCard from "@/components/card/AppointmentCard";
+import { createReviewData, updateAppointmentStatus } from "@/app/actions/appointments";
+import GroupedAppointmentCard from "@/components/card/GroupedAppointmentCard";
 
 // Type definition for appointment data
 interface Appointment {
@@ -31,6 +33,14 @@ interface Appointment {
     has_review: boolean;
 }
 
+interface GroupedDoctorAppointments {
+    doctor_id: string;
+    doctor_name: string;
+    doctor_specialization: string;
+    doctor_image_url?: string;
+    appointments: Appointment[];
+}
+
 export default function AppointmentsPage() {
     // State for appointments data
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -41,6 +51,44 @@ export default function AppointmentsPage() {
     const [selectedDate, /* setSelectedDate */] = useState<Date | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<"grouped" | "individual">("grouped");
+
+    // Define the ReviewData interface for reviews
+    interface ReviewData {
+        appointment_id: string;
+        patient_id: string;
+        doctor_id: string;
+        rating: number;
+        review: string;
+    }
+
+    // Direct function to update appointment status
+    const handleUpdateAppointmentStatus = async (appointmentId: string, status: string, scheduleId: string) => {
+        try {
+            const response = await updateAppointmentStatus(appointmentId, status, scheduleId);
+            return response;
+        } catch (error) {
+            console.error("Error updating appointment status:", error);
+            return {
+                ok: false,
+                error: "Failed to update appointment status"
+            };
+        }
+    };
+
+    // Direct function to submit reviews
+    const handleSubmitReview = async (reviewData: ReviewData) => {
+        try {
+            const response = await createReviewData(reviewData);
+            return response;
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            return {
+                success: false,
+                error: "Failed to submit review"
+            };
+        }
+    };
 
     // Fetch appointments data from API
     useEffect(() => {
@@ -132,6 +180,40 @@ export default function AppointmentsPage() {
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
+    // Get upcoming and past appointments
+    const upcomingAppointments = filteredAppointments
+        .filter(app => !selectedDate && new Date(app.appointment_time).getTime() > Date.now())
+        .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
+
+    const pastAppointments = filteredAppointments
+        .filter(app => new Date(app.appointment_time).getTime() <= Date.now())
+        .sort((a, b) => new Date(b.appointment_time).getTime() - new Date(a.appointment_time).getTime());
+
+    // Group appointments by doctor
+    const groupAppointmentsByDoctor = (appointments: Appointment[]): GroupedDoctorAppointments[] => {
+        const groupedMap = new Map<string, GroupedDoctorAppointments>();
+
+        appointments.forEach(appointment => {
+            if (!groupedMap.has(appointment.doctor_id)) {
+                groupedMap.set(appointment.doctor_id, {
+                    doctor_id: appointment.doctor_id,
+                    doctor_name: appointment.doctor_name,
+                    doctor_specialization: appointment.doctor_specialization,
+                    doctor_image_url: appointment.doctor_image_url,
+                    appointments: []
+                });
+            }
+
+            groupedMap.get(appointment.doctor_id)?.appointments.push(appointment);
+        });
+
+        return Array.from(groupedMap.values());
+    };
+
+    // Group appointments for the grouped view
+    const groupedUpcomingAppointments = groupAppointmentsByDoctor(upcomingAppointments);
+    const groupedPastAppointments = groupAppointmentsByDoctor(pastAppointments);
+
     // Loading state
     if (loading) {
         return (
@@ -164,15 +246,6 @@ export default function AppointmentsPage() {
         );
     }
 
-    // Get upcoming and past appointments
-    const upcomingAppointments = filteredAppointments
-        .filter(app => !selectedDate && new Date(app.appointment_time).getTime() > Date.now())
-        .sort((a, b) => new Date(a.appointment_time).getTime() - new Date(b.appointment_time).getTime());
-
-    const pastAppointments = filteredAppointments
-        .filter(app => new Date(app.appointment_time).getTime() <= Date.now())
-        .sort((a, b) => new Date(b.appointment_time).getTime() - new Date(a.appointment_time).getTime());
-
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -184,11 +257,36 @@ export default function AppointmentsPage() {
                             <p className="text-gray-600 pt-1">Manage your upcoming and past appointments</p>
                         </div>
 
-                        <Link href="/patients/doctors">
-                            <button className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                New Appointment
-                            </button>
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <div className="flex bg-gray-100 rounded-lg p-1">
+                                <button
+                                    onClick={() => setViewMode("grouped")}
+                                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                                        viewMode === "grouped"
+                                            ? "bg-white text-indigo-600 shadow-sm"
+                                            : "text-gray-600 hover:bg-gray-200"
+                                    }`}
+                                >
+                                    Grouped
+                                </button>
+                                <button
+                                    onClick={() => setViewMode("individual")}
+                                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                                        viewMode === "individual"
+                                            ? "bg-white text-indigo-600 shadow-sm"
+                                            : "text-gray-600 hover:bg-gray-200"
+                                    }`}
+                                >
+                                    Individual
+                                </button>
+                            </div>
+
+                            <Link href="/patients/doctors">
+                                <button className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                    New Appointment
+                                </button>
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Search and filter bar */}
@@ -266,21 +364,38 @@ export default function AppointmentsPage() {
                                 </h2>
                             </div>
 
-                            {/* Scrollable container */}
-                            <div className="overflow-x-auto pb-4 hide-scrollbar">
-                                <div className="flex gap-4 pl-1">
-                                    {upcomingAppointments.map(appointment => (
-                                        <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0">
-                                            <AppointmentCard
-                                                appointment={appointment}
-                                                formatDate={formatDate}
-                                                formatTime={formatTime}
-                                                getDaysUntil={getDaysUntil}
-                                            />
-                                        </div>
+                            {/* Display mode: Grouped */}
+                            {viewMode === "grouped" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {groupedUpcomingAppointments.map((group) => (
+                                        <GroupedAppointmentCard
+                                            key={group.doctor_id}
+                                            groupedAppointments={group}
+                                            formatDate={formatDate}
+                                            formatTime={formatTime}
+                                            getDaysUntil={getDaysUntil}
+                                        />
                                     ))}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Display mode: Individual */}
+                            {viewMode === "individual" && (
+                                <div className="overflow-x-auto pb-4 hide-scrollbar">
+                                    <div className="flex gap-4 pl-1">
+                                        {upcomingAppointments.map(appointment => (
+                                            <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0">
+                                                <AppointmentCard
+                                                    appointment={appointment}
+                                                    formatDate={formatDate}
+                                                    formatTime={formatTime}
+                                                    getDaysUntil={getDaysUntil}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -289,30 +404,44 @@ export default function AppointmentsPage() {
                         <div>
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-medium text-gray-800">Past Appointments</h2>
-
-                                {/*{pastAppointments.length > 3 && (*/}
-                                {/*    <Link href="/appointments/history" className="flex items-center text-sm text-indigo-600 hover:text-indigo-800">*/}
-                                {/*        View all <ChevronRight size={16} />*/}
-                                {/*    </Link>*/}
-                                {/*)}*/}
                             </div>
 
-                            {/* Scrollable container */}
-                            <div className="overflow-x-auto pb-4 hide-scrollbar">
-                                <div className="flex gap-4 pl-1">
-                                    {pastAppointments.slice(0, 6).map(appointment => (
-                                        <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0">
-                                            <AppointmentCard
-                                                appointment={appointment}
-                                                formatDate={formatDate}
-                                                formatTime={formatTime}
-                                                getDaysUntil={getDaysUntil}
-                                                isPast
-                                            />
-                                        </div>
+                            {/* Display mode: Grouped */}
+                            {viewMode === "grouped" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {groupedPastAppointments.map((group) => (
+                                        <GroupedAppointmentCard
+                                            key={group.doctor_id}
+                                            groupedAppointments={group}
+                                            formatDate={formatDate}
+                                            formatTime={formatTime}
+                                            getDaysUntil={getDaysUntil}
+                                            isPast
+                                            onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
+                                            onSubmitReview={handleSubmitReview}
+                                        />
                                     ))}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Display mode: Individual */}
+                            {viewMode === "individual" && (
+                                <div className="overflow-x-auto pb-4 hide-scrollbar">
+                                    <div className="flex gap-4 pl-1 flex-wrap w-full">
+                                        {pastAppointments.slice(0, 6).map(appointment => (
+                                            <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0 ">
+                                                <AppointmentCard
+                                                    appointment={appointment}
+                                                    formatDate={formatDate}
+                                                    formatTime={formatTime}
+                                                    getDaysUntil={getDaysUntil}
+                                                    isPast
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
