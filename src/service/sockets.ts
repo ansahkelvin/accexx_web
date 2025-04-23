@@ -41,7 +41,7 @@ class ChatWebSocketService {
         // Create WebSocket URL
         // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // const host = process.env.NEXT_PUBLIC_API_URL || window.location.host;
-        const wsUrl = `ws://localhost:8000/ws/chats/${chatId}?token=${cleanToken}`;
+        const wsUrl = `wss://accexx247.com/backend/api/ws/chats/${chatId}?token=${cleanToken}`;
         
         // Create new WebSocket
         this.socket = new WebSocket(wsUrl);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Home, MapPin, Video, Star, Calendar, ChevronRight, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { createChat } from "@/app/actions/chat";
 
 // Type definition for appointment data
 interface Appointment {
@@ -79,8 +81,8 @@ export default function GroupedAppointmentCard({
                                                    onUpdateAppointmentStatus,
                                                    onSubmitReview,
                                                }: GroupedAppointmentCardProps) {
-    const { doctor_name, doctor_specialization, doctor_image_url, appointments } = groupedAppointments;
-   
+    const router = useRouter();
+    const { doctor_id, doctor_name, doctor_specialization, doctor_image_url, appointments } = groupedAppointments;
 
     // State for dialogs
     const [isAllAppointmentsOpen, setIsAllAppointmentsOpen] = useState(false);
@@ -105,6 +107,13 @@ export default function GroupedAppointmentCard({
     // Get closest upcoming appointment for some display purposes
     const primaryAppointment = sortedAppointments[0];
     const nextAppointmentDays = getDaysUntil(primaryAppointment.appointment_time);
+
+    // Chat request data for the primary appointment
+    const chatRequest = {
+        patient_id: primaryAppointment.patient_id,
+        doctor_id: primaryAppointment.doctor_id,
+        appointment_id: primaryAppointment.id,
+    };
 
     // Get appropriate icon for appointment type
     const getTypeIcon = (type: string) => {
@@ -131,6 +140,57 @@ export default function GroupedAppointmentCard({
                 return "bg-blue-100 text-blue-700";
             default:
                 return "bg-gray-100 text-gray-700";
+        }
+    };
+
+    // Navigate to doctor details for booking again
+    const handleNavigateToDoctorDetails = () => {
+        router.push(`/patients/doctors/${doctor_id}`);
+    };
+
+    // Handle chat creation and navigation to inbox
+    const handleCreateChat = async () => {
+        if (isLoading) return;
+
+        setIsLoading(true);
+        try {
+            if (!chatRequest.patient_id || !chatRequest.doctor_id || !chatRequest.appointment_id) {
+                throw new Error("Missing required information");
+            }
+
+            await createChat(chatRequest);
+            router.push("/patients/inbox");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to start chat. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Handle chat creation for a specific appointment
+    const handleCreateAppointmentChat = async (appointment: Appointment) => {
+        if (isLoading) return;
+
+        setIsLoading(true);
+        try {
+            const appointmentChatRequest = {
+                patient_id: appointment.patient_id,
+                doctor_id: appointment.doctor_id,
+                appointment_id: appointment.id,
+            };
+
+            if (!appointmentChatRequest.patient_id || !appointmentChatRequest.doctor_id || !appointmentChatRequest.appointment_id) {
+                throw new Error("Missing required information");
+            }
+
+            await createChat(appointmentChatRequest);
+            router.push("/patients/inbox");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to start chat. Please try again.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -197,10 +257,7 @@ export default function GroupedAppointmentCard({
     };
 
     return (
-        <div className={`
-            bg-white rounded-lg overflow-hidden shadow-sm border transition-all
-            ${isPast ? "border-gray-100 opacity-80" : "border-gray-200 hover:shadow-md"}
-        `}>
+        <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-all flex flex-col h-full">
             {/* Doctor Information Header */}
             <div className="relative">
                 <div className="h-40 bg-gray-100">
@@ -239,65 +296,74 @@ export default function GroupedAppointmentCard({
                 )}
             </div>
 
-            <div className="p-4">
+            <div className="p-4 flex-grow flex flex-col">
                 {/* Doctor info */}
                 <h3 className="font-medium text-gray-900 text-lg">{doctor_name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{doctor_specialization}</p>
+                <p className="text-sm text-gray-600 mb-3">{doctor_specialization}</p>
 
                 {/* Appointments List */}
-                <div className="space-y-3 mb-4">
+                <div className="space-y-2 mb-3 flex-grow">
                     <h4 className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                        <Calendar size={14} />
+                        <Calendar size={16} />
                         {isPast ? "Past Appointments" : "Upcoming Appointments"}
                     </h4>
 
-                    {sortedAppointments.slice(0, 3).map((appointment) => (
-                        <div key={appointment.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-                            <div className="flex-shrink-0 w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center">
-                                {getTypeIcon(appointment.appointment_type)}
-                            </div>
-                            <div className="flex-grow">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-800">
-                                        {formatDate(appointment.appointment_time)}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                        {formatTime(appointment.appointment_time)}
-                                    </span>
+                    <div className="overflow-y-auto max-h-[120px] pr-1">
+                        {sortedAppointments.slice(0, 3).map((appointment) => (
+                            <div key={appointment.id} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                                <div className="flex-shrink-0 w-6 h-6 bg-indigo-50 rounded-full flex items-center justify-center">
+                                    {getTypeIcon(appointment.appointment_type)}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                    <span>{appointment.appointment_type}</span>
-                                    <span
-                                        className={`px-2 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
-                                        {appointment.status}
-                                    </span>
+                                <div className="flex-grow min-w-0">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="text-sm font-medium text-gray-800 truncate">
+                                            {formatDate(appointment.appointment_time)}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            {formatTime(appointment.appointment_time)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-600 flex-wrap">
+                                        <span className="truncate max-w-[100px]">{appointment.appointment_type}</span>
+                                        <span
+                                            className={`px-1.5 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
+                                            {appointment.status}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
 
                     {/* Show more link if there are more than 3 appointments */}
                     {appointments.length > 3 && (
-                        <div className="text-center">
-                            <button
-                                onClick={() => setIsAllAppointmentsOpen(true)}
-                                className="text-xs text-indigo-600 flex items-center gap-1 mx-auto hover:underline"
-                            >
-                                View all {appointments.length} appointments <ChevronRight size={14} />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setIsAllAppointmentsOpen(true)}
+                            className="text-xs text-indigo-600 flex items-center gap-1 hover:underline"
+                        >
+                            View all {appointments.length} appointments <ChevronRight size={14} />
+                        </button>
                     )}
                 </div>
 
-                {/* Action buttons */}
-                <div className="pt-2 border-t border-gray-100">
+                {/* Action buttons - always at the bottom */}
+                <div className="pt-3 mt-auto border-t border-gray-100">
                     <div className="flex gap-2">
-                        <Button 
+                        <Button
+                            onClick={handleCreateChat}
+                            disabled={isLoading}
                             className="flex-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100">
-                            Chat with Doctor
+                            {isLoading ? (
+                                <>
+                                    <Loader2 size={14} className="animate-spin mr-1" />
+                                    Connecting...
+                                </>
+                            ) : "Chat with Doctor"}
                         </Button>
                         {!isPast && (
-                            <Button className="flex-1 bg-indigo-600 text-white hover:bg-indigo-700">
+                            <Button
+                                onClick={handleNavigateToDoctorDetails}
+                                className="flex-1 bg-indigo-600 text-white hover:bg-indigo-700">
                                 Book Again
                             </Button>
                         )}
@@ -307,7 +373,7 @@ export default function GroupedAppointmentCard({
 
             {/* All Appointments Dialog */}
             <Dialog open={isAllAppointmentsOpen} onOpenChange={setIsAllAppointmentsOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <span>Appointments with {doctor_name}</span>
@@ -370,8 +436,16 @@ export default function GroupedAppointmentCard({
                                                 </a>
                                             ) : (
                                                 <>
-                                                    <Button className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs">
-                                                        Chat
+                                                    <Button
+                                                        onClick={() => handleCreateAppointmentChat(appointment)}
+                                                        disabled={isLoading}
+                                                        className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs">
+                                                        {isLoading ? (
+                                                            <>
+                                                                <Loader2 size={14} className="animate-spin mr-1" />
+                                                                Connecting...
+                                                            </>
+                                                        ) : "Chat"}
                                                     </Button>
                                                     <Button
                                                         onClick={() => handleOpenCancel(appointment)}

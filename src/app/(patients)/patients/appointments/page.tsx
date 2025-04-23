@@ -374,6 +374,8 @@ export default function AppointmentsPage() {
                                             formatDate={formatDate}
                                             formatTime={formatTime}
                                             getDaysUntil={getDaysUntil}
+                                            onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
+                                            onSubmitReview={handleSubmitReview}
                                         />
                                     ))}
                                 </div>
@@ -381,19 +383,16 @@ export default function AppointmentsPage() {
 
                             {/* Display mode: Individual */}
                             {viewMode === "individual" && (
-                                <div className="overflow-x-auto pb-4 hide-scrollbar">
-                                    <div className="flex gap-4 pl-1">
-                                        {upcomingAppointments.map(appointment => (
-                                            <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0">
-                                                <AppointmentCard
-                                                    appointment={appointment}
-                                                    formatDate={formatDate}
-                                                    formatTime={formatTime}
-                                                    getDaysUntil={getDaysUntil}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {upcomingAppointments.map(appointment => (
+                                        <AppointmentCard
+                                            key={appointment.id || appointment.schedule_id}
+                                            appointment={appointment}
+                                            formatDate={formatDate}
+                                            formatTime={formatTime}
+                                            getDaysUntil={getDaysUntil}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -426,38 +425,23 @@ export default function AppointmentsPage() {
 
                             {/* Display mode: Individual */}
                             {viewMode === "individual" && (
-                                <div className="overflow-x-auto pb-4 hide-scrollbar">
-                                    <div className="flex gap-4 pl-1 flex-wrap w-full">
-                                        {pastAppointments.slice(0, 6).map(appointment => (
-                                            <div key={appointment.id || appointment.schedule_id} className="w-[240px] sm:w-[280px] flex-shrink-0 ">
-                                                <AppointmentCard
-                                                    appointment={appointment}
-                                                    formatDate={formatDate}
-                                                    formatTime={formatTime}
-                                                    getDaysUntil={getDaysUntil}
-                                                    isPast
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {pastAppointments.map(appointment => (
+                                        <AppointmentCard
+                                            key={appointment.id || appointment.schedule_id}
+                                            appointment={appointment}
+                                            formatDate={formatDate}
+                                            formatTime={formatTime}
+                                            getDaysUntil={getDaysUntil}
+                                            isPast
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* CSS for hiding scrollbars */}
-            <style jsx global>{`
-                .hide-scrollbar {
-                    -ms-overflow-style: none;  /* IE and Edge */
-                    scrollbar-width: none;  /* Firefox */
-                }
-
-                .hide-scrollbar::-webkit-scrollbar {
-                    display: none;  /* Chrome, Safari, Opera */
-                }
-            `}</style>
         </div>
     );
 }
