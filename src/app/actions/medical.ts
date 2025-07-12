@@ -23,9 +23,21 @@ export  async function fetchMedicalFiles() {
             throw new Error("Could not fetch documents");
         }
         
-        const document = await response.json() as FileRecord[]
-        console.log("document", document);
-        return document;
+        const documents = await response.json();
+        
+        // Transform to match FileRecord interface
+        const fileRecords: FileRecord[] = documents.map((doc: any) => ({
+            id: doc.id,
+            name: doc.name,
+            description: doc.description || '',
+            url: doc.fileUrl,
+            uploaded_at: doc.uploadedAt,
+            created_at: doc.createdAt,
+            updated_at: doc.updatedAt
+        }));
+        
+        console.log("document", fileRecords);
+        return fileRecords;
         
     }catch (e) {
         console.error(e);
@@ -63,7 +75,7 @@ export async function uploadMedical({
         const formData = new FormData();
         formData.append('description', description);
         formData.append('name', name);
-        formData.append('document', document); // document is a File object
+        formData.append('file', document); // Changed from 'document' to 'file' to match API
 
         const response = await fetch(`${BASE_URL}/documents/upload`, {
             method: "POST",

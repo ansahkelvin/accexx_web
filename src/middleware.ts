@@ -14,8 +14,13 @@ export async function middleware(request: NextRequest) {
     // Handle expired or invalid token case
     if (isAuthenticated) {
         try {
-            const response = await fetch(`https://accexx247.com/backend/api/auth/validate-token`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
+            const response = await fetch(`https://accexx-backend-gbn6c.ondigitalocean.app/api/auth/validate-token`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}` 
+                },
+                body: JSON.stringify({ token: accessToken })
             });
 
             if (!response.ok) {

@@ -11,10 +11,10 @@ export async function POST() {
     }
 
     try {
-        const res = await fetch(`${BASE_URL}/auth/refresh-token`, {
+        const res = await fetch(`${BASE_URL}/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken })
+            body: JSON.stringify({ refreshToken: refreshToken })
         });
 
         if (!res.ok) {
@@ -29,28 +29,30 @@ export async function POST() {
         const data = await res.json();
         const response = NextResponse.json({ success: true });
 
-        response.cookies.set("access_token", data.access_token, {
+        response.cookies.set("access_token", data.token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24, // 24 hours
         });
 
-        response.cookies.set("refresh_token", data.refresh_token, {
+        response.cookies.set("refresh_token", data.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
-        response.cookies.set("user_id", data.user_id, {
+        response.cookies.set("user_id", data.id, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
-        response.cookies.set("user_role", data.user_role, {
+        // Map backend roles to frontend roles
+        const frontendRole = data.role === 'USER' ? 'patient' : 'doctor';
+        response.cookies.set("user_role", frontendRole, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',

@@ -30,8 +30,8 @@ export class WebSocketFactory {
             .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
             .join('&');
 
-        // Create final URL
-        const wsUrl = `${protocol}//${host}${endpoint}${queryString ? '?' + queryString : ''}`;
+        // Create final URL - update to use the new WebSocket endpoint
+        const wsUrl = `${protocol}//${host}/ws${endpoint}${queryString ? '?' + queryString : ''}`;
 
         // Create socket with default options
         const defaultOptions: WebSocketOptions = {

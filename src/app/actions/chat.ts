@@ -8,6 +8,7 @@ export async function createChat(chat: ChatRequest) {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     const user_id = cookieStore.get("user_id")?.value;
+    const user_role = cookieStore.get("user_role")?.value;
 
     if (!user_id || !accessToken) {
         throw new Error("Authentication required");
@@ -20,13 +21,13 @@ export async function createChat(chat: ChatRequest) {
     }
 
     const requestBody = {
-        appointment_id: chat.appointment_id,
-        patient_id: chat.patient_id,
-        doctor_id: chat.doctor_id,
+        appointmentId: chat.appointment_id,
+        patientId: chat.patient_id,
+        doctorId: chat.doctor_id,
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/chats`, {
+        const response = await fetch(`${BASE_URL}/v1/chat/create`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -65,14 +66,17 @@ export async function createChat(chat: ChatRequest) {
 export async function getUserChats() {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
-    const user_id = cookieStore.get("user_id")?.value;
+    const user_role = cookieStore.get("user_role")?.value;
 
-    if (!user_id || !accessToken) {
+    if (!accessToken) {
         throw new Error("Authentication required");
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/chats`, {
+        // Use different endpoints based on user role
+        const endpoint = user_role === 'doctor' ? '/v1/chat/doctor/chats' : '/v1/chat/user/chats';
+        
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -111,7 +115,7 @@ export async function getChatMessages(chatId: string) {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/chats/${chatId}/messages`, {
+        const response = await fetch(`${BASE_URL}/v1/chat/${chatId}/messages`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -134,28 +138,32 @@ export async function getChatMessages(chatId: string) {
     }
 }
 
-
 export async function sendMessage(chatId: string, content: string) {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     const user_id = cookieStore.get("user_id")?.value;
+    const user_role = cookieStore.get("user_role")?.value;
 
     if (!accessToken || !user_id || !chatId || !content.trim()) {
         return null;
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/chats/${chatId}/messages`, {
+        const requestBody = {
+            receiverId: user_role === 'doctor' ? user_id : user_id, // This would need to be the other party's ID
+            receiverType: user_role === 'doctor' ? 'USER' : 'DOCTOR',
+            content: content,
+            messageType: 'TEXT'
+        };
+
+        const response = await fetch(`${BASE_URL}/v1/chat/send`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": `Bearer ${accessToken}`,
             },
-            body: JSON.stringify({
-                sender_id: user_id,
-                content: content
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {

@@ -4,13 +4,12 @@ import {BASE_URL} from "@/config/config";
 import {cookies} from "next/headers";
 import {ReviewData} from "@/components/card/AppointmentCard";
 
-
 export const createReviewData = async (rawData: ReviewData) => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
 
     try {
-        const response = await fetch(`${BASE_URL}/ratings`, {
+        const response = await fetch(`${BASE_URL}/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -37,9 +36,24 @@ export const updateAppointmentStatus = async (appointmentId: string, status: str
     const accessToken = cookieStore.get("access_token")?.value;
 
     try {
-        // Using query parameter instead of body since the backend expects it as a query parameter
-        const response = await fetch(`${BASE_URL}/appointments/${appointmentId}/status?appointment_status=${status}&schedule_id=${scheduleId}`, {
-            method: 'PATCH',
+        // Map status to the new API format
+        let action = '';
+        switch (status.toLowerCase()) {
+            case 'confirmed':
+                action = 'confirm';
+                break;
+            case 'canceled':
+                action = 'cancel';
+                break;
+            case 'completed':
+                action = 'complete';
+                break;
+            default:
+                throw new Error(`Invalid status: ${status}`);
+        }
+
+        const response = await fetch(`${BASE_URL}/appointments/${appointmentId}/${action}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`,

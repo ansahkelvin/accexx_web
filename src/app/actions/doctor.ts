@@ -2,7 +2,7 @@
 
 import {cookies} from "next/headers";
 import {BASE_URL} from "@/config/config";
-import {DoctorDetails} from "@/types/types";
+import {DoctorDetails} from "@/types/doctor";
 
 export async function fetchUserDoctor(){
     const cookieStore = await cookies();
@@ -14,7 +14,7 @@ export async function fetchUserDoctor(){
     }
     
     try {
-        const response = await fetch(`${BASE_URL}/users/doctor/details`, {
+        const response = await fetch(`${BASE_URL}/doctors/profile`, {
             method: "GET",
             headers: {
                 'Accept': 'application/json',
@@ -25,12 +25,27 @@ export async function fetchUserDoctor(){
         if (!response.ok) {
             return null;
         }
-        const user = await response.json() as DoctorDetails;
+        const doctor = await response.json();
+        
+        // Transform to match DoctorDetails interface
+        const user: DoctorDetails = {
+            id: doctor.id,
+            name: doctor.fullName,
+            email: doctor.email,
+            gmc_number: doctor.gmcNumber,
+            specialization: doctor.specialization,
+            bio: doctor.bio,
+            work_address: doctor.appointmentAddress,
+            work_address_latitude: doctor.latitude,
+            work_address_longitude: doctor.longitude,
+            role: doctor.role,
+            profile_image: doctor.profileImage
+        };
+        
         console.log(user);
         return user;
         
     }catch (e) {
         console.error(e);
     }
-
 }

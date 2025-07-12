@@ -4,71 +4,140 @@ import {BASE_URL} from "@/config/config";
 import {redirect} from "next/navigation";
 
 interface AuthResponse {
-    access_token: string;
-    token_type: string;
-    refresh_token: string;
-    user_role: "doctor" | "patient"; // Explicit role types
-    user_id: string;
+    token: string;
+    refreshToken: string;
+    type: string;
+    id: string;
+    email: string;
+    fullName: string;
+    role: "USER" | "DOCTOR" | "ADMIN";
 }
 
 export async function login(formData: FormData) {
     try {
-        // Add username field from email
-        formData.append('username', formData.get('email') as string);
-        formData.delete('email');
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
 
-        const res = await fetch(`${BASE_URL}/auth/login`, {
-            method: 'POST',
-            body: formData,
-        });
+        console.log('Login attempt:', { email, BASE_URL });
 
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.message || 'Login failed');
+        // Try both endpoints to determine user type
+        let loginEndpoint = '/auth/user/login';
+        let response;
+
+        // First try user login
+        try {
+            console.log('Trying user login at:', `${BASE_URL}${loginEndpoint}`);
+            response = await fetch(`${BASE_URL}${loginEndpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': 'Accexx-Frontend/1.0',
+                },
+                body: JSON.stringify({
+                    email,
+                    password
+                }),
+                cache: 'no-store',
+            });
+
+            console.log('User login response status:', response.status);
+
+            if (!response.ok) {
+                // If user login fails, try doctor login
+                loginEndpoint = '/auth/doctor/login';
+                console.log('Trying doctor login at:', `${BASE_URL}${loginEndpoint}`);
+                response = await fetch(`${BASE_URL}${loginEndpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'User-Agent': 'Accexx-Frontend/1.0',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password
+                    }),
+                    cache: 'no-store',
+                });
+                console.log('Doctor login response status:', response.status);
+            }
+        } catch (error) {
+            console.error('Network error during login:', error);
+            throw new Error(`Network error during login: ${error}`);
         }
 
-        const data: AuthResponse = await res.json();
-        const isProduction = process.env.NODE_ENV === "production";
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Login failed:', response.status, response.statusText, errorText);
+            
+            let errorMessage = 'Login failed';
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.message || errorData.detail || errorMessage;
+            } catch (e) {
+                errorMessage = errorText || `Login failed with status: ${response.status}`;
+            }
+            
+            throw new Error(errorMessage);
+        }
 
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        let data: AuthResponse;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse response as JSON:', e);
+            throw new Error('Invalid response format from server');
+        }
+
+        console.log('Login successful:', { email: data.email, role: data.role });
+
+        const isProduction = process.env.NODE_ENV === "production";
 
         // Set secure HTTP-only cookies
         const cookieStore = await cookies();
-        cookieStore.set('access_token', data.access_token, {
+        cookieStore.set('access_token', data.token, {
             httpOnly: true,
             secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24, // 24 hours
         });
 
-        cookieStore.set('refresh_token', data.refresh_token, {
+        cookieStore.set('refresh_token', data.refreshToken, {
             httpOnly: true,
             secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
-        cookieStore.set('user_id', data.user_id, {
+        cookieStore.set('user_id', data.id, {
             httpOnly: true,
             secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        cookieStore.set('user_role', data.user_role, {
+        
+        // Map backend roles to frontend roles
+        const frontendRole = data.role === 'USER' ? 'patient' : 'doctor';
+        cookieStore.set('user_role', frontendRole, {
             httpOnly: true,
             secure: isProduction,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
         });
 
-        return { success: true, data };
+        return { success: true, data: { ...data, user_role: frontendRole } };
     } catch (error) {
+        console.error('Login error:', error);
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }
         return { success: false, error: 'An unexpected error occurred' };
     }
 }
-
 
 export async function logoutAction() {
     const cookieStore = await cookies();
@@ -85,7 +154,7 @@ export async function logoutAction() {
 
         if (!res.ok) {
             const error = await res.json();
-            throw new Error(error.detail || 'Logout failed');
+            throw new Error(error.message || 'Logout failed');
         }
     } catch (error) {
         console.error('Error during logout:', error);
@@ -102,16 +171,27 @@ export async function logoutAction() {
 
 export async function registerPatient(formData: FormData) {
     try {
+        const userData = {
+            fullName: formData.get('fullName') as string,
+            email: formData.get('email') as string,
+            phoneNumber: formData.get('phoneNumber') as string,
+            password: formData.get('password') as string,
+            address: formData.get('address') as string,
+            dateOfBirth: formData.get('dateOfBirth') as string,
+        };
         
-        const response = await fetch(`${BASE_URL}/auth/patient/register`, {
+        const response = await fetch(`${BASE_URL}/auth/user/register`, {
             method: 'POST',
-            body: formData,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             console.error("Registration failed:", response.status, errorData);
-            throw new Error(errorData?.detail || `Registration failed with status: ${response.status}`);
+            throw new Error(errorData?.message || `Registration failed with status: ${response.status}`);
         }
 
         return await response.json();
@@ -124,14 +204,34 @@ export async function registerPatient(formData: FormData) {
 
 export async function registerDoctor(formData: FormData) {
     try{
+        const doctorData = {
+            fullName: formData.get('fullName') as string,
+            email: formData.get('email') as string,
+            phoneNumber: formData.get('phoneNumber') as string,
+            password: formData.get('password') as string,
+            address: formData.get('address') as string,
+            dateOfBirth: formData.get('dateOfBirth') as string,
+            appointmentAddress: formData.get('appointmentAddress') as string,
+            latitude: parseFloat(formData.get('latitude') as string),
+            longitude: parseFloat(formData.get('longitude') as string),
+            bio: formData.get('bio') as string,
+            specialization: formData.get('specialization') as string,
+            gmcNumber: formData.get('gmcNumber') as string,
+            profileImage: formData.get('profileImage') as string,
+        };
+
         const response = await fetch(`${BASE_URL}/auth/doctor/register`, {
             method: 'POST',
-            body: formData,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(doctorData),
         });
+        
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             console.error("Registration failed:", response.status, errorData);
-            throw new Error(errorData?.detail || `Registration failed with status: ${response.status}`);
+            throw new Error(errorData?.message || `Registration failed with status: ${response.status}`);
         }
         return await response.json();
 

@@ -30,7 +30,7 @@ export async function makeRequest<T>(
 
     // If unauthorized, call your API route to handle token refresh
     if (response.status === 401) {
-        const refreshResponse = await fetch('http://localhost:3000/api/auth/refresh', {
+        const refreshResponse = await fetch('/api/auth/refresh', {
             method: 'POST',
         });
 
