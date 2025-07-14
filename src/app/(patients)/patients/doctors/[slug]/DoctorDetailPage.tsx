@@ -442,7 +442,7 @@ export default function DoctorDetailPageClient({ doctor, patientId }: { doctor: 
                                             </>
                                         ) : (
                                             <div className="px-6 py-8 text-center">
-                                                <p className="text-gray-500 mb-4">This doctor hasn't set up their schedule yet.</p>
+                                                <p className="text-gray-500 mb-4">This doctor hasn&apos;t set up their schedule yet.</p>
                                                 <p className="text-sm text-gray-400">Please check back later or contact the doctor directly.</p>
                                             </div>
                                         )}

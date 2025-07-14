@@ -20,9 +20,9 @@ const AppointmentsCalendar = ({ appointments }: { appointments: DoctorAppointmen
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
     const events: CalendarEvent[] = appointments.map((appointment) => ({
-        title: `${appointment.patient_name} - ${appointment.doctor_name}`,
-        start: new Date(appointment.appointment_time),
-        end: new Date(new Date(appointment.appointment_time).getTime() + 45 * 60000),
+        title: `${appointment.patientName} - ${appointment.doctorName}`,
+        start: new Date(appointment.appointmentDateTime),
+        end: new Date(new Date(appointment.appointmentDateTime).getTime() + 45 * 60000),
         appointment
     }));
 
@@ -139,7 +139,7 @@ const AppointmentsCalendar = ({ appointments }: { appointments: DoctorAppointmen
                                 <User size={20} className="text-blue-600" />
                             </div>
                             <div>
-                                <h4 className="font-medium text-gray-900">{appointment.patient_name}</h4>
+                                <h4 className="font-medium text-gray-900">{appointment.patientName}</h4>
                                 <p className="text-sm text-gray-500">Patient</p>
                             </div>
                         </div>
@@ -149,7 +149,7 @@ const AppointmentsCalendar = ({ appointments }: { appointments: DoctorAppointmen
                                 <User size={20} className="text-green-600" />
                             </div>
                             <div>
-                                <h4 className="font-medium text-gray-900">{appointment.doctor_name}</h4>
+                                <h4 className="font-medium text-gray-900">{appointment.doctorName}</h4>
                                 <p className="text-sm text-gray-500">Doctor</p>
                             </div>
                         </div>
@@ -160,10 +160,10 @@ const AppointmentsCalendar = ({ appointments }: { appointments: DoctorAppointmen
                             <Clock size={16} className="text-gray-500 mr-2" />
                             <div>
                                 <p className="text-gray-700">
-                                    {moment(appointment.appointment_time).format('dddd, MMMM D, YYYY')}
+                                    {moment(appointment.appointmentDateTime).format('dddd, MMMM D, YYYY')}
                                 </p>
                                 <p className="text-gray-700">
-                                    {moment(appointment.appointment_time).format('h:mm A')} - {moment(appointment.appointment_time).add(45, 'minutes').format('h:mm A')}
+                                    {moment(appointment.appointmentDateTime).format('h:mm A')} - {moment(appointment.appointmentDateTime).add(45, 'minutes').format('h:mm A')}
                                 </p>
                             </div>
                         </div>
@@ -176,10 +176,10 @@ const AppointmentsCalendar = ({ appointments }: { appointments: DoctorAppointmen
                         </span>
                     </div>
 
-                    {appointment.reason && (
+                    {appointment.notes && (
                         <div>
                             <h4 className="font-medium text-gray-900 mb-2">Reason</h4>
-                            <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{appointment.reason}</p>
+                            <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{appointment.notes}</p>
                         </div>
                     )}
 

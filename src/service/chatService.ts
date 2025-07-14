@@ -9,24 +9,52 @@ class ChatService {
       console.log('Response type:', typeof response);
       console.log('Response:', JSON.stringify(response, null, 2));
       
-      // Return the response directly - it should already be in the correct format
+      // Handle different response formats
       if (Array.isArray(response)) {
         console.log('Response is array, length:', response.length);
         if (response.length > 0) {
           console.log('First chat object keys:', Object.keys(response[0]));
           console.log('First chat object:', response[0]);
         }
-        return response;
+        // Transform to match Chat interface if needed
+        return response.map((chat: any) => ({
+          id: chat.id,
+          userId: chat.userId || chat.user?.id,
+          doctorId: chat.doctorId || chat.doctor?.id,
+          userName: chat.userName || chat.user?.fullName || chat.user?.name,
+          doctorName: chat.doctorName || chat.doctor?.fullName || chat.doctor?.name,
+          doctorProfileImage: chat.doctorProfileImage || chat.doctor?.profileImage || '',
+          lastMessage: chat.lastMessage || '',
+          lastMessageTime: chat.lastMessageTime || chat.updatedAt,
+          unreadCount: chat.unreadCount || 0,
+          isActive: chat.isActive || true,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt
+        }));
       }
       
       // If it's wrapped in a data property, extract it
-      if (response && typeof response === 'object' && response.data && Array.isArray(response.data)) {
-        console.log('Response has data property, length:', response.data.length);
-        if (response.data.length > 0) {
-          console.log('First chat object keys:', Object.keys(response.data[0]));
-          console.log('First chat object:', response.data[0]);
+      if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
+        const data = (response as any).data;
+        console.log('Response has data property, length:', data.length);
+        if (data.length > 0) {
+          console.log('First chat object keys:', Object.keys(data[0]));
+          console.log('First chat object:', data[0]);
         }
-        return response.data;
+        return data.map((chat: any) => ({
+          id: chat.id,
+          userId: chat.userId || chat.user?.id,
+          doctorId: chat.doctorId || chat.doctor?.id,
+          userName: chat.userName || chat.user?.fullName || chat.user?.name,
+          doctorName: chat.doctorName || chat.doctor?.fullName || chat.doctor?.name,
+          doctorProfileImage: chat.doctorProfileImage || chat.doctor?.profileImage || '',
+          lastMessage: chat.lastMessage || '',
+          lastMessageTime: chat.lastMessageTime || chat.updatedAt,
+          unreadCount: chat.unreadCount || 0,
+          isActive: chat.isActive || true,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt
+        }));
       }
       
       console.warn('Unexpected response format:', response);
@@ -45,24 +73,39 @@ class ChatService {
       console.log('Response type:', typeof response);
       console.log('Response:', JSON.stringify(response, null, 2));
       
-      // Return the response directly
+      // Handle different response formats
       if (Array.isArray(response)) {
         console.log('Messages array length:', response.length);
         if (response.length > 0) {
           console.log('First message object keys:', Object.keys(response[0]));
           console.log('First message object:', response[0]);
         }
-        return response;
+        return response.map((message: any) => ({
+          id: message.id,
+          chat_id: message.chat_id || message.chatId,
+          sender_id: message.sender_id || message.senderId,
+          content: message.content,
+          timestamp: message.timestamp || message.createdAt,
+          sender_type: message.sender_type || message.senderType || 'doctor'
+        }));
       }
       
       // If it's wrapped in a data property, extract it
-      if (response && typeof response === 'object' && response.data && Array.isArray(response.data)) {
-        console.log('Messages from data property, length:', response.data.length);
-        if (response.data.length > 0) {
-          console.log('First message object keys:', Object.keys(response.data[0]));
-          console.log('First message object:', response.data[0]);
+      if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
+        const data = (response as any).data;
+        console.log('Messages from data property, length:', data.length);
+        if (data.length > 0) {
+          console.log('First message object keys:', Object.keys(data[0]));
+          console.log('First message object:', data[0]);
         }
-        return response.data;
+        return data.map((message: any) => ({
+          id: message.id,
+          chat_id: message.chat_id || message.chatId,
+          sender_id: message.sender_id || message.senderId,
+          content: message.content,
+          timestamp: message.timestamp || message.createdAt,
+          sender_type: message.sender_type || message.senderType || 'doctor'
+        }));
       }
       
       console.warn('Unexpected messages response format:', response);
@@ -75,13 +118,14 @@ class ChatService {
 
   async sendMessage(request: SendMessageRequest): Promise<ChatMessage> {
     try {
-      const response = await sendMessageAction(request.chatId, request.content);
+      // For doctor sending message, receiverId and receiverType need to be determined
+      // This is a simplified approach - you may need to adjust based on your logic
+      const response = await sendMessageAction(request.chatId, request.content, 'patient', 'USER');
       
       if (!response) {
         throw new Error('Failed to send message');
       }
       
-      // Return the response directly
       return response;
     } catch (error) {
       console.error('Error sending message:', error);

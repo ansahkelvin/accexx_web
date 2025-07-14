@@ -135,7 +135,7 @@ export const editDoctorDetails = async (doctor: DoctorDetails, imageFile?: File)
 export const fetchDashboard = async (): Promise<AppointmentStats | null> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
-    const endpoint = `${BASE_URL}/appointments/doctor`;
+    const endpoint = `${BASE_URL}/api/appointments/doctor`;
     
     try {
         const response = await fetch(endpoint, {
@@ -177,7 +177,7 @@ export const fetchDashboard = async (): Promise<AppointmentStats | null> => {
 export const fetchAppointments = async (): Promise<DoctorAppointmentResponse[] | null> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
-    const endpoint = `${BASE_URL}/appointments/doctor`;
+    const endpoint = `${BASE_URL}/api/appointments/doctor`;
     
     try {
         const response = await fetch(endpoint, {

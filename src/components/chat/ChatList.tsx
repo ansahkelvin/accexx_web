@@ -43,7 +43,7 @@ export const ChatList: React.FC<ChatListProps> = ({
       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
         <div className="text-4xl mb-4">💬</div>
         <p className="text-lg font-medium">No conversations yet</p>
-        <p className="text-sm">When patients start chatting, they'll appear here</p>
+        <p className="text-sm">When patients start chatting, they&apos;ll appear here</p>
       </div>
     );
   }
