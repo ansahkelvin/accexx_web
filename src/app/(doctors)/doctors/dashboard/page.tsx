@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState} from 'react';
 import {Calendar, Clock, CheckCircle, XCircle, Mail, User} from 'lucide-react';
-import {AppointmentStats, fetchDashboard, fetchDoctorPatient} from "@/service/doctors/doctor";
-import {IPatients} from "@/types/doctor";
+import {fetchDashboard, fetchDoctorPatient} from "@/service/doctors/doctor";
+import {AppointmentStats, IPatients} from "@/types/doctor";
 import PatientProfileImage from "@/components/patient/Profile";
 import Link from "next/link";
 
 
 export default function DoctorDashboard() {
 
-    const [dashboardData, setDashboardData] = useState<AppointmentStats | null >(null);
+    const [dashboardData, setDashboardData] = useState<AppointmentStats | null>(null);
     const [patient, setPatient] = useState<IPatients[] | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -48,10 +48,6 @@ export default function DoctorDashboard() {
         fetchAppointmentDetails().then()
     }, []);
 
-
-
-
-
     return (
         <div className="flex h-screen bg-gray-50 text-sm">
             {/* Main Content */}
@@ -59,7 +55,7 @@ export default function DoctorDashboard() {
                 <div className="px-6 py-6">
 
                     {/* Stats Overview */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 transition-all duration-200 hover:shadow-md">
                             <div className="flex items-center">
                                 <div className="p-2 rounded-full bg-blue-50 border border-blue-100">
@@ -67,7 +63,7 @@ export default function DoctorDashboard() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-sm font-medium text-gray-500">Total Appointments</p>
-                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.total_appointments}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.total_appointments || 0}</h3>
                                 </div>
                             </div>
                         </div>
@@ -79,7 +75,7 @@ export default function DoctorDashboard() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-sm font-medium text-gray-500">Confirmed</p>
-                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.confirmed_appointments}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.confirmed_appointments || 0}</h3>
                                 </div>
                             </div>
                         </div>
@@ -91,7 +87,7 @@ export default function DoctorDashboard() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-sm font-medium text-gray-500">Pending</p>
-                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.pending_appointments}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.pending_appointments || 0}</h3>
                                 </div>
                             </div>
                         </div>
@@ -103,7 +99,19 @@ export default function DoctorDashboard() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-sm font-medium text-gray-500">Canceled</p>
-                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.canceled_appointments}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.canceled_appointments || 0}</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 transition-all duration-200 hover:shadow-md">
+                            <div className="flex items-center">
+                                <div className="p-2 rounded-full bg-purple-50 border border-purple-100">
+                                    <CheckCircle size={18} className="text-purple-600" />
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium text-gray-500">Completed</p>
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-800">{dashboardData?.completed_appointments || 0}</h3>
                                 </div>
                             </div>
                         </div>
@@ -133,7 +141,6 @@ export default function DoctorDashboard() {
                                                     <div
                                                         key={patient.id}
                                                         className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
-                                                        // onClick={() => openPatientDetail(patient)}
                                                     >
                                                         <div className="p-6">
                                                             <div className="flex items-center mb-4">

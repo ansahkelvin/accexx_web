@@ -5,30 +5,35 @@ import Head from "next/head";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { User, CheckCircle, Upload } from "lucide-react";
-import { fetchUserPatientDetails } from "@/app/actions/user";
+import { User, CheckCircle } from "lucide-react";
+import { fetchUserPatientDetails, updateUserProfile } from "@/app/actions/user";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
-import Image from "next/image";
 
-// Types
+// Types - Updated to match actual API response
 interface User {
     id: string;
     email: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-    name: string;
-    profile_image: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    name?: string;
+    fullName?: string;
+    phoneNumber?: string;
+    isEmailVerified?: boolean;
+    dateOfBirth?: string;
+    profile_image?: string;
+    profilePicture?: string;
+    profileImage?: string;
 }
 
 const Settings: NextPage = () => {
     // Success message state
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // Profile form
     const profileForm = useForm<User>({
@@ -39,7 +44,13 @@ const Settings: NextPage = () => {
             latitude: 0,
             longitude: 0,
             name: "",
+            fullName: "",
+            phoneNumber: "",
+            isEmailVerified: false,
+            dateOfBirth: "",
             profile_image: "",
+            profilePicture: "",
+            profileImage: "",
         },
     });
 
@@ -48,6 +59,7 @@ const Settings: NextPage = () => {
             try {
                 const user = await fetchUserPatientDetails();
                 if (user) {
+                    console.log("Fetched user details:", user);
                     profileForm.reset(user);
                 }
             } catch (error) {
@@ -57,7 +69,44 @@ const Settings: NextPage = () => {
         fetchUserDetails();
     }, [profileForm]);
 
-    const profileImage = profileForm.watch("profile_image") || "/default-avatar.png"; // Fallback image
+
+    const handleSaveProfile = async (data: User) => {
+        setIsSaving(true);
+        setSaveError(null);
+        setShowSuccess(false);
+        
+        try {
+            console.log("Saving profile data:", data);
+            
+            // Prepare the data to send to the API
+            const updateData = {
+                fullName: data.fullName || data.name,
+                email: data.email,
+                phoneNumber: data.phoneNumber,
+                address: data.address,
+                latitude: data.latitude,
+                longitude: data.longitude
+            };
+            
+            const updatedUser = await updateUserProfile(updateData);
+            
+            if (updatedUser) {
+                setShowSuccess(true);
+                // Update the form with the new data
+                profileForm.reset(updatedUser);
+                
+                // Hide success message after 3 seconds
+                setTimeout(() => {
+                    setShowSuccess(false);
+                }, 3000);
+            }
+        } catch (error) {
+            console.error("Failed to save profile:", error);
+            setSaveError(error instanceof Error ? error.message : "Failed to save profile");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <>
@@ -79,6 +128,15 @@ const Settings: NextPage = () => {
                     </Alert>
                 )}
 
+                {saveError && (
+                    <Alert className="mb-6 bg-red-50 border-red-200">
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>
+                            {saveError}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <Tabs defaultValue="profile" className="w-full">
                     <TabsList className="grid grid-cols-4 mb-8">
                         <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -93,29 +151,17 @@ const Settings: NextPage = () => {
                                 <CardDescription>Update your personal information and preferences.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-center space-x-4 mb-6">
-                                    <Avatar className="w-24 h-24">
-                                        {profileImage ? (
-                                            <Image width={800} height={800} src={profileImage} alt="User Profile" className="w-full h-full rounded-full object-cover" />
-                                        ) : null}
-                                    </Avatar>
-                                    <div>
-                                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                                            <Upload className="h-4 w-4" />
-                                            <span>Change Photo</span>
-                                        </Button>
-                                    </div>
-                                </div>
+                            
                                 <Form {...profileForm}>
-                                    <form onSubmit={profileForm.handleSubmit(() => {})} className="space-y-6">
+                                    <form onSubmit={profileForm.handleSubmit(handleSaveProfile)} className="space-y-6">
                                         <FormField
                                             control={profileForm.control}
-                                            name="name"
+                                            name="fullName"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Name</FormLabel>
+                                                    <FormLabel>Full Name</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} />
+                                                        <Input {...field} value={field.value || profileForm.watch("name") || ""} />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -134,6 +180,18 @@ const Settings: NextPage = () => {
                                         />
                                         <FormField
                                             control={profileForm.control}
+                                            name="phoneNumber"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Phone Number</FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} type="tel" />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={profileForm.control}
                                             name="address"
                                             render={({ field }) => (
                                                 <FormItem>
@@ -145,7 +203,9 @@ const Settings: NextPage = () => {
                                             )}
                                         />
                                         <div className="flex justify-end">
-                                            <Button type="submit">Save Profile</Button>
+                                            <Button type="submit" disabled={isSaving}>
+                                                {isSaving ? "Saving..." : "Save Profile"}
+                                            </Button>
                                         </div>
                                     </form>
                                 </Form>

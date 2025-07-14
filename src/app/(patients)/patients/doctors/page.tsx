@@ -1,9 +1,9 @@
 "use client"
 import DoctorCard from "@/components/card/DoctorCard";
-import {Award, MapPin, Search, Stethoscope} from "lucide-react";
+import {MapPin, Search, Stethoscope} from "lucide-react";
 import {useEffect, useState} from "react";
-import {AllDoctor, NearbyDoctor, TopDoctor} from "@/types/types";
-import {fetchAllDoctors, fetchNearbyDoctors, fetchTopDoctors} from "@/app/actions/user";
+import {AllDoctor, NearbyDoctor} from "@/types/types";
+import {fetchAllDoctors, fetchNearbyDoctors} from "@/app/actions/user";
 
 export default function DoctorsPage() {
     // CSS for hiding scrollbars but enabling scroll
@@ -17,13 +17,11 @@ export default function DoctorsPage() {
     }
   `;
     const [allDoctors, setAllDoctors] = useState<AllDoctor[]>([]);
-    const [topDoctors, setTopDoctors] = useState<TopDoctor[]>([]);
     const [nearbyDoctors, setNearbyDoctors] = useState<NearbyDoctor[]>([]);
 
     // Loading states
     const [isLoading, setIsLoading] = useState({
         all: true,
-        top: true,
         nearby: true
     });
 
@@ -41,16 +39,6 @@ export default function DoctorsPage() {
                 }
                 setIsLoading(prev => ({ ...prev, all: false }));
 
-                // Fetch top doctors
-                setIsLoading(prev => ({ ...prev, top: true }));
-                const topDoctorsData = await fetchTopDoctors();
-                if (topDoctorsData) {
-                    setTopDoctors(topDoctorsData.map(doctor => ({
-                        ...doctor,
-                    })));
-                }
-                setIsLoading(prev => ({ ...prev, top: false }));
-
                 // Fetch nearby doctors
                 setIsLoading(prev => ({ ...prev, nearby: true }));
                 const nearbyDoctorsData = await fetchNearbyDoctors();
@@ -62,7 +50,7 @@ export default function DoctorsPage() {
                 setIsLoading(prev => ({ ...prev, nearby: false }));
             } catch (error) {
                 console.error("Error fetching doctors:", error);
-                setIsLoading({ all: false, top: false, nearby: false });
+                setIsLoading({ all: false, nearby: false });
             }
         };
 
@@ -78,7 +66,6 @@ export default function DoctorsPage() {
     // Get unique specialties from all doctor lists
     const allSpecialties = new Set([
         ...allDoctors.map(doctor => doctor.specialization),
-        ...topDoctors.map(doctor => doctor.specialization),
         ...nearbyDoctors.map(doctor => doctor.specialization)
     ]);
     const specialties = ['All', ...Array.from(allSpecialties)];
@@ -179,57 +166,6 @@ export default function DoctorsPage() {
                 {/* Only show categories if not searching or filtering */}
                 {searchTerm.trim() === '' && selectedSpecialty === 'All' && (
                     <>
-                        {/* Top Rated Doctors - Horizontal Scrolling Cards */}
-                        <section className="mb-8">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-medium text-gray-900 flex items-center">
-                                    <Award size={18} className="mr-2 text-[#9871ff]" />
-                                    Top Rated Doctors
-                                </h2>
-                                {/*<button className="flex items-center text-[#9871ff] text-sm font-medium hover:underline">*/}
-                                {/*    View all <ChevronRight size={16} className="ml-1" />*/}
-                                {/*</button>*/}
-                            </div>
-
-                            {isLoading.top ? (
-                                <div className="overflow-x-auto scrollbar-hide -mx-4">
-                                    <div className="flex px-4 pb-4 space-x-4">
-                                        {[1, 2, 3].map(i => (
-                                            <div key={i} className="min-w-[280px] animate-pulse bg-white rounded-lg shadow-sm p-4">
-                                                <div className="flex items-center mb-4">
-                                                    <div className="rounded-full bg-gray-200 h-16 w-16"></div>
-                                                    <div className="ml-3 space-y-2 w-full">
-                                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                                        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-3 mb-4">
-                                                    <div className="h-3 bg-gray-200 rounded"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                                                </div>
-                                                <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : topDoctors.length > 0 ? (
-                                <div className="overflow-x-auto scrollbar-hide -mx-4">
-                                    <div className="flex px-4 pb-4 space-x-4">
-                                        {topDoctors.map(doctor => (
-                                            <div key={doctor.id} className="min-w-[280px] max-w-[300px]">
-                                                <DoctorCard doctor={doctor} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
-                                    <p className="text-gray-700">No top-rated doctors found</p>
-                                </div>
-                            )}
-                        </section>
-
                         {/* Nearby Doctors - Horizontal Scrolling Cards */}
                         <section className="mb-8">
                             <div className="flex justify-between items-center mb-4">

@@ -3,13 +3,11 @@ import {
     Calendar,
     Clock,
     Phone,
-    FileText,
     PlusCircle,
     ArrowRight,
     MessageSquare,
     ChevronRight,
-    ShieldCheck,
-    ExternalLink
+    ShieldCheck
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,13 +35,11 @@ export default async function DashboardPage() {
         );
     }
 
-    // Safe access with proper typing
-    const userName = user.name?.split(" ")?.[0] ?? "User";
+    // Safe access with proper typing - use fullName from API response
+    const userName = user.fullName?.split(" ")?.[0] ?? user.name?.split(" ")?.[0] ?? "User";
     const upcomingAppointments = dashboard.upcoming_appointments ?? [];
-    const recentDocuments = dashboard.recent_documents ?? [];
     const latestAppointment = dashboard.latest_appointment;
     const appointmentCount = dashboard.appointment_count ?? 0;
-    const fileCount = dashboard.file_counts ?? 0;
 
     // Format date safely with TypeScript
     const formatDate = (dateString: string | undefined | null, options: Intl.DateTimeFormatOptions = {}): string => {
@@ -81,14 +77,23 @@ export default async function DashboardPage() {
                     <div>
                         <p className="text-blue-100 text-sm">Next Appointment</p>
                         <h3 className="text-lg md:text-xl font-bold mt-1">
-                            {latestAppointment ? formatDate(latestAppointment?.appointment_time, {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "numeric",
-                            }) : "No new upcoming appointment"}
+                            {latestAppointment ? formatDate(
+                                'appointmentDateTime' in latestAppointment 
+                                    ? latestAppointment.appointmentDateTime 
+                                    : (latestAppointment as any).appointment_time, 
+                                {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "numeric",
+                                }
+                            ) : "No new upcoming appointment"}
                         </h3>
-                        <p className="text-sm text-blue-100 mt-1">{latestAppointment?.appointment_location ?? ""}</p>
+                        <p className="text-sm text-blue-100 mt-1">
+                            {latestAppointment && 'doctor' in latestAppointment 
+                                ? (latestAppointment.doctor as any)?.fullName 
+                                : (latestAppointment as any)?.appointment_location ?? ""}
+                        </p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
                         <Calendar className="h-6 md:h-8 w-6 md:w-8" />
@@ -108,10 +113,14 @@ export default async function DashboardPage() {
 
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white p-4 md:p-6 shadow-lg flex items-center justify-between md:col-span-1 col-span-full">
                     <div>
-                        <p className="text-emerald-100 text-sm">Recent Documents</p>
-                        <h3 className="text-lg md:text-xl font-bold mt-1">{fileCount}</h3>
+                        <p className="text-emerald-100 text-sm">Total Appointments</p>
+                        <h3 className="text-lg md:text-xl font-bold mt-1">{appointmentCount}</h3>
                         <p className="text-sm text-emerald-100 mt-1">
-                            {formatDate(recentDocuments?.[0]?.updated_at, {
+                            {formatDate(latestAppointment ? (
+                                'appointmentDateTime' in latestAppointment 
+                                    ? latestAppointment.appointmentDateTime 
+                                    : (latestAppointment as any).appointment_time
+                            ) : null, {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
@@ -120,7 +129,7 @@ export default async function DashboardPage() {
                         </p>
                     </div>
                     <div className="bg-white/20 p-3 rounded-full">
-                        <FileText className="h-6 md:h-8 w-6 md:w-8" />
+                        <Calendar className="h-6 md:h-8 w-6 md:w-8" />
                     </div>
                 </div>
             </div>
@@ -133,54 +142,73 @@ export default async function DashboardPage() {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-4 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100">
                             <h2 className="text-lg md:text-xl font-bold text-gray-800">Upcoming Appointments</h2>
-                            <Button className="bg-blue-50 text-blue-600 hover:bg-blue-100 w-full sm:w-auto">
-                                <PlusCircle className="h-4 w-4 mr-2" />
-                                Book New
-                            </Button>
+                           
                         </div>
 
                         <div className="divide-y divide-gray-100">
                             {upcomingAppointments.length > 0 ? (
-                                upcomingAppointments.map((appointment) => (
-                                    <div key={appointment.appointment_id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition-colors">
-                                        <div className="flex items-center mb-4 md:mb-0">
-                                            <Avatar className="h-10 w-10 md:h-12 md:w-12 mr-3 md:mr-4 object-contain">
-                                                <AvatarImage className="object-cover" src={appointment.doctor.profile_image ?? ""} alt={appointment.doctor.name} />
-                                                <AvatarFallback>{appointment.doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">{appointment.doctor.name}</h3>
-                                                <p className="text-sm text-gray-500">{appointment.appointment_type.replace("_", " ").toLocaleUpperCase()}</p>
+                                upcomingAppointments.map((appointment) => {
+                                    // Handle both old and new API response structures
+                                    const isNewFormat = 'id' in appointment && 'appointmentDateTime' in appointment;
+                                    
+                                    const appointmentId = isNewFormat ? appointment.id : appointment.appointment_id;
+                                    const doctorName = isNewFormat ? appointment.doctor?.fullName : appointment.doctor?.name;
+                                    const doctorImage = isNewFormat ? appointment.doctor?.profilePicture : appointment.doctor?.profile_image;
+                                    const doctorSpecialization = isNewFormat ? appointment.doctor?.specialization : appointment.appointment_type;
+                                    const appointmentTime = isNewFormat ? appointment.appointmentDateTime : appointment.appointment_time;
+                                    const appointmentStatus = appointment.status;
+                                    const appointmentNotes = isNewFormat ? appointment.notes : '';
+                                    
+                                    return (
+                                        <div key={appointmentId} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center mb-4 md:mb-0">
+                                                <Avatar className="h-10 w-10 md:h-12 md:w-12 mr-3 md:mr-4 object-contain">
+                                                    <AvatarImage className="object-cover" src={doctorImage ?? ""} alt={doctorName ?? "Doctor"} />
+                                                    <AvatarFallback>{doctorName ? doctorName.split(' ').map((n: string) => n[0]).join('') : "DR"}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <h3 className="font-medium text-gray-900">{doctorName ?? "Unknown Doctor"}</h3>
+                                                    <p className="text-sm text-gray-500">{doctorSpecialization ? doctorSpecialization.toUpperCase() : "APPOINTMENT"}</p>
+                                                    {appointmentNotes && (
+                                                        <p className="text-xs text-gray-400 mt-1 truncate max-w-xs">{appointmentNotes}</p>
+                                                    )}
+                                                </div>
                                             </div>
+
+                                            <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {formatDate(appointmentTime, {
+                                                        weekday: "short",
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                    })}
+                                                </div>
+
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <Clock className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {formatTime(appointmentTime, { hour: "2-digit", minute: "2-digit" })}
+                                                </div>
+
+                                                <Badge className={
+                                                    appointmentStatus === "CONFIRMED" 
+                                                        ? "bg-green-100 text-green-800 border border-green-200" 
+                                                        : appointmentStatus === "COMPLETED"
+                                                        ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                                        : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                                                }>
+                                                    {appointmentStatus === "CONFIRMED" ? "Confirmed" : 
+                                                     appointmentStatus === "COMPLETED" ? "Completed" : 
+                                                     appointmentStatus === "PENDING" ? "Pending" : 
+                                                     appointmentStatus === "CANCELLED" ? "Cancelled" : appointmentStatus}
+                                                </Badge>
+                                            </div>
+
+                                            
                                         </div>
-
-                                        <div className="flex flex-wrap items-center gap-3 md:gap-4">
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                                                {formatDate(appointment.appointment_time, {
-                                                    weekday: "short",
-                                                    year: "numeric",
-                                                    month: "long",
-                                                    day: "numeric",
-                                                })}
-                                            </div>
-
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Clock className="h-4 w-4 mr-1 text-gray-400" />
-                                                {formatTime(appointment.appointment_time, { hour: "2-digit", minute: "2-digit" })}
-                                            </div>
-
-                                            <Badge className={appointment.status === "confirmed" ? "bg-green-100 text-green-800 border border-green-200" : "bg-yellow-100 text-yellow-800 border border-yellow-200"}>
-                                                {appointment.status === "confirmed" ? "Confirmed" : "Pending"}
-                                            </Badge>
-                                        </div>
-
-                                        <Button variant="ghost" size="sm" className="mt-4 md:mt-0 text-blue-600">
-                                            Details
-                                            <ChevronRight className="h-4 w-4 ml-1" />
-                                        </Button>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <div className="p-6 text-center text-gray-500">
                                     No upcoming appointments
@@ -189,63 +217,11 @@ export default async function DashboardPage() {
                         </div>
 
                         <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-t border-gray-100">
-                            <Button variant="link" className="text-blue-600 p-0 h-auto font-medium">
-                                View all appointments
-                                <ArrowRight className="h-4 w-4 ml-1" />
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Documents Section */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-4 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100">
-                            <h2 className="text-lg md:text-xl font-bold text-gray-800">Recent Documents</h2>
-                            <Button asChild className="bg-gray-50 text-gray-600 hover:bg-gray-100 w-full sm:w-auto">
-                                <Link className="flex items-center gap-2" href={"/patients/evidence"}>
-                                    Upload New
-                                </Link>
-                            </Button>
-                        </div>
-
-                        <div className="divide-y divide-gray-100">
-                            {recentDocuments.length > 0 ? (
-                                recentDocuments.map((document) => (
-                                    <div key={document.id} className="p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:bg-gray-50 transition-colors">
-                                        <div className="flex items-center mb-3 sm:mb-0">
-                                            <div className="bg-blue-100 p-2 md:p-3 rounded-lg mr-3 md:mr-4">
-                                                <FileText className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">{document.name}</h3>
-                                                <p className="text-sm text-gray-500">
-                                                    {formatDate(document.created_at, {
-                                                        weekday: "short",
-                                                        year: "numeric",
-                                                        month: "long",
-                                                        day: "numeric",
-                                                    })} • {formatTime(document.created_at)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Button asChild variant="outline" size="sm" className="flex items-center self-end sm:self-auto">
-                                            <Link className="flex items-center gap-2 cursor-pointer" href={"/patients/evidence"}>
-                                                <ExternalLink className="h-4 w-4 mr-1" />
-                                                View
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-6 text-center text-gray-500">
-                                    No recent documents
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-t border-gray-100">
-                            <Button asChild variant="link" className="text-blue-600 p-0 h-auto font-medium">
-                                <Link className="flex items-center gap-2" href={"/patients/evidence"}>
-                                    View all documents
+                            <Button
+                            asChild
+                             variant="link" className="text-blue-600 p-0 h-auto font-medium">
+                                <Link href="/patients/appointments">
+                                    View all appointments
                                     <ArrowRight className="h-4 w-4 ml-1" />
                                 </Link>
                             </Button>
@@ -279,12 +255,6 @@ export default async function DashboardPage() {
                                     </Link>
                                 </Button>
                                 <Button variant="ghost" className="w-full justify-start py-3 px-0 text-gray-700">
-                                    <Link className="flex items-center" href={'/patients/evidence'}>
-                                        <FileText className="h-4 w-4 mr-2 text-gray-500" />
-                                        Browse documents
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" className="w-full justify-start py-3 px-0 text-gray-700">
                                     <Link className="flex items-center" href={'/patients/inbox'}>
                                         <MessageSquare className="h-4 w-4 mr-2 text-gray-500" />
                                         Message doctor
@@ -309,27 +279,6 @@ export default async function DashboardPage() {
                                 <div className="py-10 text-center">
                                     No notifications
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Support Card */}
-                    <Card className="overflow-hidden border-none shadow-sm bg-gradient-to-br from-indigo-50 to-blue-50">
-                        <CardContent className="p-4 md:p-6">
-                            <div className="flex items-center justify-center mb-4">
-                                <div className="bg-white p-3 rounded-full shadow-sm">
-                                    <ShieldCheck className="h-6 w-6 text-blue-600" />
-                                </div>
-                            </div>
-                            <h3 className="text-center text-lg font-medium text-gray-900">Need Assistance?</h3>
-                            <p className="text-center text-gray-600 text-sm mt-2">
-                                Our support team is available 24/7 to help with any questions you might have.
-                            </p>
-                            <div className="mt-6">
-                                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Contact Support
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>

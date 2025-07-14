@@ -2,9 +2,11 @@
 
 import {BASE_URL} from "@/config/config";
 import {cookies} from "next/headers";
-import {DoctorDetails} from "@/types/doctor";
+import {DoctorDetails, DoctorAppointmentResponse, AppointmentStats, TimeSlotRequest, TimeSlotResponse} from "@/types/doctor";
 import {DoctorSchedules, IPatients} from "@/types/doctor";
 
+// Keep the old interfaces for backward compatibility but mark as deprecated
+/** @deprecated Use DoctorAppointmentResponse instead */
 export interface Appointment {
     id: string;
     timeSlotId: string;
@@ -17,17 +19,9 @@ export interface Appointment {
     userId: string;
     appointmentDateTime: string; // ISO date format
     notes: string;
-    meetingLink?: string;
 }
 
-export interface AppointmentStats {
-    total_appointments: number;
-    confirmed_appointments: number;
-    pending_appointments: number;
-    canceled_appointments: number;
-    today_appointments: Appointment[];
-}
-
+/** @deprecated Use DoctorAppointmentResponse instead */
 export interface DoctorAppointment {
     id: string;
     doctorId: string;
@@ -78,7 +72,8 @@ export const fetchDoctorDetails = async () => {
         work_address_latitude: doctor.latitude,
         work_address_longitude: doctor.longitude,
         role: doctor.role,
-        profile_image: doctor.profileImage
+        profile_image: doctor.profileImage,
+        phoneNumber: doctor.phoneNumber
     };
     
     return user;
@@ -105,7 +100,9 @@ export const editDoctorDetails = async (doctor: DoctorDetails, imageFile?: File)
         bio: doctor.bio,
         specialization: doctor.specialization,
         gmcNumber: doctor.gmc_number,
-        profileImage: doctor.profile_image
+        profileImage: doctor.profile_image,
+        phoneNumber: doctor.phoneNumber || "", // Include phone number if available
+        password: "" // Include empty password as required by API
     };
 
     const endpoint = `${BASE_URL}/doctors/profile`;
@@ -135,188 +132,271 @@ export const editDoctorDetails = async (doctor: DoctorDetails, imageFile?: File)
     }
 }
 
-export const fetchDashboard = async () => {
+export const fetchDashboard = async (): Promise<AppointmentStats | null> => {
     const cookieStore = await cookies();
-    const accessToken =  cookieStore.get("access_token")?.value;
-    const endpoint = `${BASE_URL}/appointments/doctor`;
-    const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
-        }
-    })
-    if(!response.ok) {
-        return null;
-    }
-    const appointments = await response.json();
-    
-    // Transform appointments to match AppointmentStats interface
-    const appointmentStats: AppointmentStats = {
-        total_appointments: appointments.length,
-        confirmed_appointments: appointments.filter((apt: any) => apt.status === 'CONFIRMED').length,
-        pending_appointments: appointments.filter((apt: any) => apt.status === 'PENDING').length,
-        canceled_appointments: appointments.filter((apt: any) => apt.status === 'CANCELED').length,
-        today_appointments: appointments.filter((apt: any) => {
-            const today = new Date().toDateString();
-            const aptDate = new Date(apt.appointmentDateTime).toDateString();
-            return aptDate === today;
-        })
-    };
-    
-    return appointmentStats;
-}
-
-export const fetchAppointments = async () => {
-    const cookieStore = await cookies();
-    const accessToken =  cookieStore.get("access_token")?.value;
+    const accessToken = cookieStore.get("access_token")?.value;
     const endpoint = `${BASE_URL}/appointments/doctor`;
     
-    const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
+    try {
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            return null;
         }
-    })
-    
-    if(!response.ok) {
+
+        const appointments: DoctorAppointmentResponse[] = await response.json();
+        
+        // Calculate stats from the actual API response
+        const appointmentStats: AppointmentStats = {
+            total_appointments: appointments.length,
+            confirmed_appointments: appointments.filter(apt => apt.status === 'CONFIRMED').length,
+            pending_appointments: appointments.filter(apt => apt.status === 'PENDING').length,
+            canceled_appointments: appointments.filter(apt => apt.status === 'CANCELED').length,
+            completed_appointments: appointments.filter(apt => apt.status === 'COMPLETED').length,
+            today_appointments: appointments.filter(apt => {
+                const today = new Date().toDateString();
+                const aptDate = new Date(apt.appointmentDateTime).toDateString();
+                return aptDate === today;
+            })
+        };
+        
+        return appointmentStats;
+    } catch (error) {
+        console.error("Error fetching dashboard:", error);
         return null;
     }
-    const appointments = await response.json();
-    
-    // Transform to match DoctorAppointment interface
-    const doctorAppointments: DoctorAppointment[] = appointments.map((apt: any) => ({
-        id: apt.id,
-        doctorId: apt.doctor.id,
-        userId: apt.user.id,
-        timeSlotId: apt.timeSlot.id,
-        appointmentDateTime: apt.appointmentDateTime,
-        status: apt.status,
-        notes: apt.notes || '',
-        appointmentType: apt.timeSlot.isVirtual ? 'VIRTUAL' : 'IN_PERSON',
-        meetingLink: apt.timeSlot.meetingLink,
-        appointmentLocation: apt.timeSlot.location,
-        appointmentLocationLatitude: apt.timeSlot.latitude,
-        appointmentLocationLongitude: apt.timeSlot.longitude,
-        doctorName: apt.doctor.fullName,
-        doctorImageUrl: apt.doctor.profileImage,
-        doctorSpecialization: apt.doctor.specialization,
-        patientName: apt.user.fullName,
-        patientImageUrl: apt.user.profileImage
-    }));
-    
-    return doctorAppointments;
 }
 
-export const fetchDoctorSchedules = async () => {
+export const fetchAppointments = async (): Promise<DoctorAppointmentResponse[] | null> => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    const endpoint = `${BASE_URL}/appointments/doctor`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+        
+        // Return the appointments directly without transformation
+        const appointments: DoctorAppointmentResponse[] = await response.json();
+        return appointments;
+    } catch (error) {
+        console.error("Error fetching appointments:", error);
+        return null;
+    }
+}
+
+export const fetchDoctorSchedules = async (): Promise<TimeSlotResponse[] | null> => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    
+    const endpoint = `${BASE_URL}/time-slots/doctor/all`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+        
+        const timeSlots: TimeSlotResponse[] = await response.json();
+        return timeSlots;
+    } catch (error) {
+        console.error("Error fetching doctor schedules:", error);
+        return null;
+    }
+}
+
+export const createSchedule = async (timeSlotData: TimeSlotRequest): Promise<TimeSlotResponse | null> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     
     const endpoint = `${BASE_URL}/time-slots`;
-    const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(timeSlotData)
+        });
+        
+        if (!response.ok) {
+            console.error("Failed to create time slot:", response.status, response.statusText);
+            return null;
         }
-    })
-    if(!response.ok) {
+        
+        const timeSlot: TimeSlotResponse = await response.json();
+        return timeSlot;
+    } catch (error) {
+        console.error("Error creating time slot:", error);
         return null;
     }
-    
-    const timeSlots = await response.json();
-    
-    // Transform to match DoctorSchedules interface
-    const schedules: DoctorSchedules[] = timeSlots.map((slot: any) => ({
-        id: slot.id,
-        doctor_id: slot.doctorId,
-        start_time: new Date(slot.date + 'T' + slot.startTime),
-        end_time: new Date(slot.date + 'T' + slot.startTime + ' +' + slot.durationMinutes + ' minutes'),
-        is_booked: slot.isBooked
-    }));
-    
-    return schedules;
 }
 
-export const createSchedule = async (schedule: DoctorSchedules) => {
+export const createBatchSchedule = async (timeSlotsData: TimeSlotRequest[]): Promise<TimeSlotResponse[] | null> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     
-    // Transform DoctorSchedules to match the new API format
-    const timeSlotData = {
-        date: schedule.start_time.toISOString().split('T')[0],
-        startTime: schedule.start_time.toTimeString().split(' ')[0].substring(0, 5),
-        durationMinutes: Math.round((schedule.end_time.getTime() - schedule.start_time.getTime()) / (1000 * 60)),
-        notes: ''
-    };
+    const endpoint = `${BASE_URL}/time-slots/batch`;
     
-    const endpoint = `${BASE_URL}/time-slots`;
-    const response = await fetch(endpoint, {
-        body: JSON.stringify(timeSlotData),
-        method: "POST",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(timeSlotsData)
+        });
+        
+        if (!response.ok) {
+            console.error("Failed to create batch time slots:", response.status, response.statusText);
+            return null;
         }
-    })
-    if(!response.ok) {
+        
+        const timeSlots: TimeSlotResponse[] = await response.json();
+        return timeSlots;
+    } catch (error) {
+        console.error("Error creating batch time slots:", error);
         return null;
     }
-    return response.json();
 }
 
-export const updateSchedule = async (schedule: DoctorSchedules) => {
+export const updateSchedule = async (timeSlotId: string, timeSlotData: Partial<TimeSlotRequest>): Promise<TimeSlotResponse | null> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
     
-    // Transform DoctorSchedules to match the new API format
-    const timeSlotData = {
-        date: schedule.start_time.toISOString().split('T')[0],
-        startTime: schedule.start_time.toTimeString().split(' ')[0].substring(0, 5),
-        durationMinutes: Math.round((schedule.end_time.getTime() - schedule.start_time.getTime()) / (1000 * 60)),
-        notes: ''
-    };
+    const endpoint = `${BASE_URL}/time-slots/${timeSlotId}`;
     
-    const endpoint = `${BASE_URL}/time-slots/${schedule.id}`;
-    const response = await fetch(endpoint, {
-        method: "PUT",
-        body: JSON.stringify(timeSlotData),
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
+    try {
+        const response = await fetch(endpoint, {
+            method: "PUT",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(timeSlotData)
+        });
+        
+        if (!response.ok) {
+            console.error("Failed to update time slot:", response.status, response.statusText);
+            return null;
         }
-    })
-    
-    if (!response.ok) {
+        
+        const timeSlot: TimeSlotResponse = await response.json();
+        return timeSlot;
+    } catch (error) {
+        console.error("Error updating time slot:", error);
         return null;
     }
-    
-    return response.json();
 }
 
-export const deleteSchedule = async (schedule: DoctorSchedules) => {
+export const deleteSchedule = async (timeSlotId: string): Promise<boolean> => {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("access_token")?.value;
-    console.log(schedule)
-    const endpoint = `${BASE_URL}/time-slots/${schedule.id}`;
-    const response = await fetch(endpoint, {
-        method: "DELETE",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`
+    
+    const endpoint = `${BASE_URL}/time-slots/${timeSlotId}`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "DELETE",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        
+        return response.ok;
+    } catch (error) {
+        console.error("Error deleting time slot:", error);
+        return false;
+    }
+}
+
+export const fetchUpcomingSchedules = async (): Promise<TimeSlotResponse[] | null> => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    
+    const endpoint = `${BASE_URL}/time-slots/doctor/upcoming`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            return null;
         }
-    })
-    if(response.status !== 204) {
+        
+        const timeSlots: TimeSlotResponse[] = await response.json();
+        return timeSlots;
+    } catch (error) {
+        console.error("Error fetching upcoming schedules:", error);
         return null;
     }
-    return "Deleted successfully.";
+}
+
+export const fetchAvailableSlotsForDate = async (date: string): Promise<TimeSlotResponse[] | null> => {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get("access_token")?.value;
+    
+    const endpoint = `${BASE_URL}/time-slots/doctor/available?date=${date}`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            return null;
+        }
+        
+        const timeSlots: TimeSlotResponse[] = await response.json();
+        return timeSlots;
+    } catch (error) {
+        console.error("Error fetching available slots:", error);
+        return null;
+    }
 }
 
 export const fetchDoctorPatient = async () => {

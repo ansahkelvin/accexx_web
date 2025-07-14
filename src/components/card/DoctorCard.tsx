@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from "next/image";
 import Link from "next/link";
-import {MapPin, Star, Clock, ChevronRight} from 'lucide-react';
+import {MapPin, Clock, ChevronRight} from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface BaseDoctor {
@@ -47,25 +47,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, compact = false }) => {
                         <h3 className=" text-gray-800 text-base truncate">{doctor.name}</h3>
                         <p className="text-purple-600 text-sm  truncate">{doctor.specialization}</p>
 
-                        {/* Rating Display - Fixed */}
-                        {doctor.rating !== undefined && (
-                            <div className="flex items-center mt-1">
-                                <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star
-                                            key={i}
-                                            size={14}
-                                            className={i < Math.floor(doctor.rating || 0)
-                                                ? "text-yellow-400 fill-yellow-400"
-                                                : "text-gray-200"}
-                                        />
-                                    ))}
-                                </div>
-                                <span className="text-xs text-gray-500 ml-1">
-                                    {doctor.rating.toFixed(1)} {doctor.rating_count !== undefined && `(${doctor.rating_count})`}
-                                </span>
-                            </div>
-                        )}
+                      
                     </div>
                 </div>
             </div>

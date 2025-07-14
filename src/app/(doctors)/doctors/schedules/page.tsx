@@ -10,63 +10,48 @@ import {
     AlertCircle,
     ChevronLeft,
     ChevronRight,
-    TrashIcon
+    TrashIcon,
+    CalendarDays,
+    FileText
 } from 'lucide-react';
-import { format, isSameDay, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-import { DoctorSchedules } from "@/types/doctor";
-import {createSchedule, deleteSchedule, fetchDoctorSchedules} from "@/service/doctors/doctor";
-import {Button} from "@/components/ui/button";
+import { format, isSameDay, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, parseISO } from 'date-fns';
+import { TimeSlotResponse, TimeSlotRequest } from "@/types/doctor";
+import { createSchedule, deleteSchedule, fetchDoctorSchedules, createBatchSchedule } from "@/service/doctors/doctor";
+import { Button } from "@/components/ui/button";
 
 interface TimeSlot {
     startTime: Date;
     endTime: Date;
     isBooked: boolean;
     id: string;
+    status: string;
+    notes?: string;
 }
 
 export default function SchedulesPage() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [schedules, setSchedules] = useState<DoctorSchedules[]>([]);
+    const [timeSlots, setTimeSlots] = useState<TimeSlotResponse[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreatingSchedule, setIsCreatingSchedule] = useState<boolean>(false);
-    const [newSchedule, setNewSchedule] = useState<{
-        startTime: string;
-        endTime: string;
-        date: string;
-    }>({
+    const [isCreatingBatch, setIsCreatingBatch] = useState<boolean>(false);
+    const [newSchedule, setNewSchedule] = useState<TimeSlotRequest>({
+        date: format(new Date(), 'yyyy-MM-dd'),
         startTime: '09:00',
         endTime: '09:30',
-        date: format(new Date(), 'yyyy-MM-dd'),
+        durationMinutes: 30,
+        notes: ''
     });
 
-    // Fix the addMinutes function to handle overnight time slots properly
-    const addMinutes = (time: string, minutesToAdd: number) => {
-        // Check if time is a valid string in HH:mm format
-        if (!time || !time.includes(':')) {
-            return '';
-        }
-
-        const [hours, minutes] = time.split(":").map(Number);
-
-        // Make sure hours and minutes are valid numbers
-        if (isNaN(hours) || isNaN(minutes)) {
-            return '';
-        }
-
-        // Create a date object using the current date (just for time calculation)
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
-
-        // Add the specified number of minutes
-        date.setMinutes(date.getMinutes() + minutesToAdd);
-
-        // Format back to "HH:mm" for the time input field
-        // Use padStart to ensure 2 digits for hours and minutes
-        const resultHours = date.getHours().toString().padStart(2, '0');
-        const resultMinutes = date.getMinutes().toString().padStart(2, '0');
-
-        return `${resultHours}:${resultMinutes}`;
+    // Calculate duration in minutes between two time strings
+    const calculateDuration = (startTime: string, endTime: string): number => {
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        const [endHours, endMinutes] = endTime.split(':').map(Number);
+        
+        const startTotalMinutes = startHours * 60 + startMinutes;
+        const endTotalMinutes = endHours * 60 + endMinutes;
+        
+        return endTotalMinutes - startTotalMinutes;
     };
 
     const fetchSchedules = async () => {
@@ -78,7 +63,7 @@ export default function SchedulesPage() {
                 setError("Error fetching doctor schedules.");
                 return;
             }
-            setSchedules(response);
+            setTimeSlots(response);
         } catch (error) {
             console.error(error);
             setError('Failed to load schedules. Please try again.');
@@ -93,50 +78,28 @@ export default function SchedulesPage() {
     }, []);
 
     // Handle creating a new schedule
-// In the handleCreateSchedule function, modify the date parsing logic
-
     const handleCreateSchedule = async () => {
         setError(null);
 
-        // Ensure times exist
-        if (!newSchedule.startTime || !newSchedule.endTime) {
-            setError("Start time and end time are required.");
+        // Ensure required fields exist
+        if (!newSchedule.date || !newSchedule.startTime || !newSchedule.endTime) {
+            setError("Date, start time and end time are required.");
             return;
         }
 
-        // Convert startTime and endTime into proper Date objects
-        const [startHours, startMinutes] = newSchedule.startTime.split(":").map(Number);
-        const [endHours, endMinutes] = newSchedule.endTime.split(":").map(Number);
-
-        // Parse the date correctly
-        // First get the date components from the date string which is in yyyy-MM-dd format
-        const [year, month, day] = newSchedule.date.split('-').map(Number);
-
-        // Create Date objects with the date properly formatted as day/month/year
-        // Note: In JavaScript Date, months are 0-indexed (0 = January, 11 = December)
-        const startDateTime = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
-        const endDateTime = new Date(year, month - 1, day, endHours, endMinutes, 0, 0);
-
-        // Validate time inputs
-        if (startDateTime >= endDateTime) {
+        // Calculate duration
+        const duration = calculateDuration(newSchedule.startTime, newSchedule.endTime);
+        if (duration <= 0) {
             setError("End time must be after start time");
             return;
         }
 
         setIsLoading(true);
         try {
-            const scheduleRequest: DoctorSchedules = {
-                doctor_id: "",
-                start_time: startDateTime,
-                end_time: endDateTime,
-                is_booked: false
+            const scheduleRequest: TimeSlotRequest = {
+                ...newSchedule,
+                durationMinutes: duration
             };
-
-            console.log('Sending schedule with dates:', {
-                startDate: startDateTime.toISOString(),
-                endDate: endDateTime.toISOString(),
-                originalDateString: newSchedule.date
-            });
 
             const response = await createSchedule(scheduleRequest);
             if (!response) {
@@ -146,6 +109,14 @@ export default function SchedulesPage() {
 
             await fetchSchedules();
             setIsCreatingSchedule(false);
+            // Reset form
+            setNewSchedule({
+                date: format(new Date(), 'yyyy-MM-dd'),
+                startTime: '09:00',
+                endTime: '09:30',
+                durationMinutes: 30,
+                notes: ''
+            });
         } catch (error) {
             console.error(error);
             setError("Failed to create schedule. Please try again.");
@@ -153,34 +124,81 @@ export default function SchedulesPage() {
             setIsLoading(false);
         }
     };
-    // Filter schedules for the selected date
-    const filteredSchedules = schedules.filter(schedule => {
-        const scheduleDate = new Date(schedule.start_time);
-        return isSameDay(scheduleDate, selectedDate);
+
+    // Handle creating batch schedules
+    const handleCreateBatchSchedule = async () => {
+        setError(null);
+
+        // Create multiple slots for the selected date
+        const slots: TimeSlotRequest[] = [];
+        const startHour = 9; // 9 AM
+        const endHour = 17; // 5 PM
+        const slotDuration = 30; // 30 minutes
+
+        for (let hour = startHour; hour < endHour; hour++) {
+            for (let minute = 0; minute < 60; minute += slotDuration) {
+                const startTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                const endMinute = minute + slotDuration;
+                const endHourAdjusted = hour + Math.floor(endMinute / 60);
+                const endMinuteAdjusted = endMinute % 60;
+                const endTime = `${endHourAdjusted.toString().padStart(2, '0')}:${endMinuteAdjusted.toString().padStart(2, '0')}`;
+
+                slots.push({
+                    date: newSchedule.date,
+                    startTime,
+                    endTime,
+                    durationMinutes: slotDuration,
+                    notes: `Regular consultation slot`
+                });
+            }
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await createBatchSchedule(slots);
+            if (!response) {
+                setError("Error creating batch schedules.");
+                return;
+            }
+
+            await fetchSchedules();
+            setIsCreatingBatch(false);
+        } catch (error) {
+            console.error(error);
+            setError("Failed to create batch schedules. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter time slots for the selected date
+    const filteredTimeSlots = timeSlots.filter(slot => {
+        const slotDate = parseISO(slot.date);
+        return isSameDay(slotDate, selectedDate);
     });
-    
-    
 
     // Generate week days for the calendar view
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday start
     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-    // Group schedules by hour for timeline view
-    const timelineSchedules = schedules.reduce((acc, schedule) => {
-        const startTime = new Date(schedule.start_time);
-        const endTime = new Date(schedule.end_time);
-        const day = format(startTime, 'yyyy-MM-dd');
+    // Group time slots by hour for timeline view
+    const timelineTimeSlots = timeSlots.reduce((acc, slot) => {
+        const startDateTime = parseISO(slot.startDateTime);
+        const endDateTime = parseISO(slot.endDateTime);
+        const day = format(startDateTime, 'yyyy-MM-dd');
 
         if (!acc[day]) {
             acc[day] = [];
         }
 
         acc[day].push({
-            id: schedule.id || `temp-${startTime.getTime()}`,
-            startTime,
-            endTime,
-            isBooked: schedule.is_booked
+            id: slot.id,
+            startTime: startDateTime,
+            endTime: endDateTime,
+            isBooked: slot.status === 'BOOKED',
+            status: slot.status,
+            notes: slot.notes
         });
 
         return acc;
@@ -200,25 +218,49 @@ export default function SchedulesPage() {
 
     const officeHours = getOfficeHours();
     
-    const deleteDoctorSchedule = async (schedule: DoctorSchedules) => {
-        const response = await deleteSchedule(schedule);
-        if (response === null) {
+    const deleteDoctorSchedule = async (timeSlotId: string) => {
+        const success = await deleteSchedule(timeSlotId);
+        if (!success) {
             setError("Error deleting schedule.");
+        } else {
+            await fetchSchedules();
         }
-        await fetchSchedules();
     }
+
+    // Get status color
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'AVAILABLE':
+                return 'bg-blue-100 text-blue-800';
+            case 'BOOKED':
+                return 'bg-green-100 text-green-800';
+            case 'CANCELLED':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     return (
         <div className="p-6">
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
-                <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
-                    onClick={() => setIsCreatingSchedule(true)}
-                >
-                    <Plus size={16} />
-                    <span>Add Time Slot</span>
-                </button>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+                <div className="flex gap-2">
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                        onClick={() => setIsCreatingSchedule(true)}
+                    >
+                        <Plus size={16} />
+                        <span>Add Time Slot</span>
+                    </button>
+                    <button
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-1"
+                        onClick={() => setIsCreatingBatch(true)}
+                    >
+                        <CalendarDays size={16} />
+                        <span>Add Day Schedule</span>
+                    </button>
+                </div>
             </div>
 
             {/* Error message */}
@@ -261,8 +303,8 @@ export default function SchedulesPage() {
                     {weekDays.map((day, index) => {
                         const isToday = isSameDay(day, new Date());
                         const isSelected = isSameDay(day, selectedDate);
-                        const daySchedules = schedules.filter(s =>
-                            isSameDay(new Date(s.start_time), day)
+                        const daySlots = timeSlots.filter(slot =>
+                            isSameDay(parseISO(slot.date), day)
                         );
 
                         return (
@@ -276,7 +318,7 @@ export default function SchedulesPage() {
                                     {format(day, 'd')}
                                 </div>
                                 <div className="mt-1 flex justify-center">
-                                    <span className={`h-2 w-2 rounded-full ${daySchedules.length > 0 ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
+                                    <span className={`h-2 w-2 rounded-full ${daySlots.length > 0 ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
                                 </div>
                             </div>
                         );
@@ -297,32 +339,39 @@ export default function SchedulesPage() {
                         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
                         <p className="mt-4 text-gray-600">Loading schedules...</p>
                     </div>
-                ) : filteredSchedules.length > 0 ? (
+                ) : filteredTimeSlots.length > 0 ? (
                     <div className="divide-y divide-gray-200">
-                        {filteredSchedules.map((schedule) => (
-                            <div key={schedule.id || `temp-${new Date(schedule.start_time).getTime()}`} className="px-6 py-4 flex items-center">
-                                <div className={`p-2 rounded-full ${schedule.is_booked ? 'bg-green-100' : 'bg-blue-100'} mr-4`}>
-                                    <Clock size={20} className={schedule.is_booked ? 'text-green-600' : 'text-blue-600'} />
+                        {filteredTimeSlots.map((slot) => (
+                            <div key={slot.id} className="px-6 py-4 flex items-center">
+                                <div className={`p-2 rounded-full ${slot.status === 'BOOKED' ? 'bg-green-100' : 'bg-blue-100'} mr-4`}>
+                                    <Clock size={20} className={slot.status === 'BOOKED' ? 'text-green-600' : 'text-blue-600'} />
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                     <p className="font-medium text-gray-900">
-                                        {format(new Date(schedule.start_time), 'h:mm a')} - {format(new Date(schedule.end_time), 'h:mm a')}
+                                        {slot.formattedStartTime} - {slot.durationText}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                        {schedule.is_booked ? 'Booked appointment' : 'Available for booking'}
+                                        {slot.status === 'BOOKED' ? 'Booked appointment' : 'Available for booking'}
                                     </p>
+                                    {slot.notes && (
+                                        <p className="text-sm text-gray-400 mt-1 flex items-center gap-1">
+                                            <FileText size={12} />
+                                            {slot.notes}
+                                        </p>
+                                    )}
                                 </div>
-                                <div className="ml-auto flex gap-2">
-                                  
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        schedule.is_booked ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                                    }`}>
-                                        {schedule.is_booked ? 'Booked' : 'Available'}
+                                <div className="ml-auto flex gap-2 items-center">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(slot.status)}`}>
+                                        {slot.status}
                                     </span>
-                                    {schedule.is_booked ? (<></>) : <Button className={"bg-red-700 rounded-full w-8 h-8"} onClick={() => deleteDoctorSchedule(schedule)}>
-                                        <TrashIcon className="text-white" size={20} />
-                                    </Button>}
-                                    
+                                    {slot.status === 'AVAILABLE' && (
+                                        <Button 
+                                            className="bg-red-700 rounded-full w-8 h-8 p-0" 
+                                            onClick={() => deleteDoctorSchedule(slot.id)}
+                                        >
+                                            <TrashIcon className="text-white" size={16} />
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -334,12 +383,20 @@ export default function SchedulesPage() {
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No time slots available</h3>
                         <p className="text-gray-500 mb-6">There are no schedules set for this date.</p>
-                        <button
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            onClick={() => setIsCreatingSchedule(true)}
-                        >
-                            Add Time Slot
-                        </button>
+                        <div className="flex gap-2 justify-center">
+                            <button
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                onClick={() => setIsCreatingSchedule(true)}
+                            >
+                                Add Time Slot
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                onClick={() => setIsCreatingBatch(true)}
+                            >
+                                Add Day Schedule
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -376,7 +433,7 @@ export default function SchedulesPage() {
                                             className="h-12 border-t border-gray-100 relative"
                                         >
                                             {/* Show slots for this day and hour */}
-                                            {timelineSchedules[format(day, 'yyyy-MM-dd')]?.map((slot, slotIdx) => {
+                                            {timelineTimeSlots[format(day, 'yyyy-MM-dd')]?.map((slot, slotIdx) => {
                                                 // Only render if the slot starts within this hour
                                                 if (slot.startTime.getHours() === hour.hour) {
                                                     const durationMins = (slot.endTime.getTime() - slot.startTime.getTime()) / (1000 * 60);
@@ -387,7 +444,7 @@ export default function SchedulesPage() {
                                                         <div
                                                             key={slotIdx}
                                                             className={`absolute left-0 right-0 rounded-sm px-1 ${
-                                                                slot.isBooked ? 'bg-green-100 border-l-4 border-green-500' : 'bg-blue-100 border-l-4 border-blue-500'
+                                                                slot.status === 'BOOKED' ? 'bg-green-100 border-l-4 border-green-500' : 'bg-blue-100 border-l-4 border-blue-500'
                                                             }`}
                                                             style={{
                                                                 top: `${(slot.startTime.getMinutes() / 60) * heightPerMin}px`,
@@ -447,10 +504,15 @@ export default function SchedulesPage() {
                                             value={newSchedule.startTime}
                                             onChange={(e) => {
                                                 const newStartTime = e.target.value;
+                                                const newEndTime = newStartTime ? 
+                                                    new Date(`2000-01-01T${newStartTime}:00`).getTime() + (30 * 60 * 1000) : 
+                                                    new Date(`2000-01-01T${newStartTime}:00`).getTime();
+                                                const endTimeStr = new Date(newEndTime).toTimeString().slice(0, 5);
+                                                
                                                 setNewSchedule({
                                                     ...newSchedule,
                                                     startTime: newStartTime,
-                                                    endTime: addMinutes(newStartTime, 30)
+                                                    endTime: endTimeStr
                                                 });
                                             }}
                                         />
@@ -459,12 +521,25 @@ export default function SchedulesPage() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                                         <input
-                                            readOnly={true}
                                             type="time"
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            value={addMinutes(newSchedule.startTime, 30)}
+                                            value={newSchedule.endTime}
+                                            onChange={(e) =>
+                                                setNewSchedule({...newSchedule, endTime: e.target.value})}
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                                    <textarea
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        rows={3}
+                                        placeholder="Add any notes about this time slot..."
+                                        value={newSchedule.notes}
+                                        onChange={(e) =>
+                                            setNewSchedule({...newSchedule, notes: e.target.value})}
+                                    />
                                 </div>
 
                                 <div className="bg-blue-50 p-4 rounded-md">
@@ -495,6 +570,70 @@ export default function SchedulesPage() {
                                         <>
                                             <Check size={16} className="mr-1" />
                                             <span>Create Schedule</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Batch Schedule Modal */}
+            {isCreatingBatch && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h2 className="text-xl font-semibold text-gray-800">Add Day Schedule</h2>
+                            <button
+                                className="text-gray-400 hover:text-gray-500"
+                                onClick={() => setIsCreatingBatch(false)}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={newSchedule.date}
+                                        onChange={(e) =>
+                                            setNewSchedule({...newSchedule, date: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="bg-green-50 p-4 rounded-md">
+                                    <p className="text-sm text-green-800">
+                                        This will create 30-minute time slots from 9:00 AM to 5:00 PM for the selected date.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                                    onClick={() => setIsCreatingBatch(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                                    onClick={handleCreateBatchSchedule}
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-white border-r-transparent mr-2"></span>
+                                            <span>Creating...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CalendarDays size={16} className="mr-1" />
+                                            <span>Create Day Schedule</span>
                                         </>
                                     )}
                                 </button>

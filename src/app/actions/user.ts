@@ -8,9 +8,9 @@ import {
     MedicalAppointment,
     NearbyDoctor,
     TopDoctor,
-    User
+    User,
+    DoctorDetails
 } from "@/types/types";
-import { DoctorDetails } from "@/types/doctor";
 
 export async function fetchUserPatientDetails(){
     try{
@@ -35,6 +35,7 @@ export async function fetchUserPatientDetails(){
         }
 
         const userData: User = await response.json();
+        console.log("API Response for user profile:", userData);
         return userData;
 
     }catch(err){
@@ -63,14 +64,18 @@ export async function fetchPatientDashboard() {
         }
 
         const appointments = await response.json();
+        
         // Transform the response to match DashboardData interface
         const patient: DashboardData = {
             latest_appointment: appointments[0] || null,
             appointment_count: appointments.length,
             file_counts: 0, // This would need to come from documents endpoint
-            upcoming_appointments: appointments.filter((apt: any) => 
-                new Date(apt.appointmentDateTime) > new Date()
-            ).slice(0, 5),
+            upcoming_appointments: appointments.filter((apt: any) => {
+                // Filter for upcoming appointments (not completed and in the future)
+                const appointmentDate = new Date(apt.appointmentDateTime);
+                const now = new Date();
+                return apt.status !== "COMPLETED" && appointmentDate > now;
+            }).slice(0, 5),
             recent_documents: [] // This would need to come from documents endpoint
         };
         return patient;
@@ -149,6 +154,7 @@ export async function fetchTopDoctors(): Promise<TopDoctor[] | null> {
         }
 
         const doctors = await response.json();
+        
         // Filter and transform to get top doctors (you might want to add rating logic)
         const topDoctors: TopDoctor[] = doctors
             .filter((doctor: any) => doctor.isVerified)
@@ -159,7 +165,7 @@ export async function fetchTopDoctors(): Promise<TopDoctor[] | null> {
                 work_address: doctor.appointmentAddress,
                 work_address_longitude: doctor.longitude,
                 work_address_latitude: doctor.latitude,
-                profile_image: doctor.profileImage,
+                profile_image: doctor.profilePicture,
                 specialization: doctor.specialization,
                 rating: doctor.rating || 0
             }));
@@ -179,14 +185,22 @@ export async function fetchNearbyDoctors(): Promise<NearbyDoctor[] | null> {
             return null;
         }
 
-        // Get all doctors and filter by distance
-        const response = await fetch(`${BASE_URL}/doctors/public/all`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${accessToken}`
+        // Get user's location from profile or use default London coordinates
+        const userProfile = await fetchUserPatientDetails();
+        const userLat = userProfile?.latitude || 51.5191327; // Default to London
+        const userLng = userProfile?.longitude || -0.146291;
+        
+        // Fetch nearby doctors using the new endpoint
+        const response = await fetch(
+            `${BASE_URL}/doctors/public/near-you?latitude=${userLat}&longitude=${userLng}&radiusKm=50`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
             }
-        });
+        );
 
         if (!response.ok) {
             return null;
@@ -194,28 +208,14 @@ export async function fetchNearbyDoctors(): Promise<NearbyDoctor[] | null> {
 
         const doctors = await response.json();
         
-        // Calculate distance from London coordinates (you might want to get user's location)
-        const userLat = 51.5191327;
-        const userLng = -0.146291;
-        
-        const nearbyDoctors: NearbyDoctor[] = doctors
-            .filter((doctor: any) => doctor.isVerified)
-            .map((doctor: any) => {
-                const distance = calculateDistance(
-                    userLat, userLng,
-                    doctor.latitude, doctor.longitude
-                );
-                return {
-                    id: doctor.id,
-                    name: doctor.fullName,
-                    specialization: doctor.specialization,
-                    profile_image: doctor.profileImage,
-                    distance: distance
-                };
-            })
-            .filter((doctor: NearbyDoctor) => doctor.distance <= 70) // Within 70km
-            .sort((a: NearbyDoctor, b: NearbyDoctor) => a.distance - b.distance)
-            .slice(0, 10);
+        // Transform to match NearbyDoctor interface
+        const nearbyDoctors: NearbyDoctor[] = doctors.map((doctor: any) => ({
+            id: doctor.id,
+            name: doctor.fullName,
+            specialization: doctor.specialization,
+            profile_image: doctor.profilePicture,
+            distance: doctor.distance || 0 // Assuming the API returns distance
+        }));
 
         return nearbyDoctors;
     } catch(err) {
@@ -245,6 +245,8 @@ export async function fetchAllDoctors(): Promise<AllDoctor[] | null> {
         }
 
         const doctors = await response.json();
+        
+        // Transform to match AllDoctor interface with new API structure
         const allDoctors: AllDoctor[] = doctors
             .filter((doctor: any) => doctor.isVerified)
             .map((doctor: any) => ({
@@ -253,10 +255,10 @@ export async function fetchAllDoctors(): Promise<AllDoctor[] | null> {
                 work_address: doctor.appointmentAddress,
                 work_address_longitude: doctor.longitude,
                 work_address_latitude: doctor.latitude,
-                profile_image: doctor.profileImage,
+                profile_image: doctor.profilePicture,
                 specialization: doctor.specialization,
                 rating: doctor.rating || 0,
-                rating_count: doctor.ratingCount || 0
+                rating_count: doctor.rating_count || 0
             }));
 
         return allDoctors;
@@ -266,43 +268,50 @@ export async function fetchAllDoctors(): Promise<AllDoctor[] | null> {
 }
 
 export async function fetchDoctorDetails(id: string) {
-    try{
+    try {
         const cookieStore = await cookies();
         const accessToken = cookieStore.get("access_token")?.value;
-        if(!accessToken) {
+
+        if (!accessToken) {
             return null;
         }
-        const response = await fetch(`${BASE_URL}/doctors/${id}`, {
+
+        const response = await fetch(`${BASE_URL}/doctors/public/${id}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${accessToken}`
             }
-        })
+        });
+
         if (!response.ok) {
             return null;
         }
+
         const doctor = await response.json();
         
-        // Transform to match DoctorDetails interface
+        // Transform to match DoctorDetails interface with new API structure
         const doctorDetails: DoctorDetails = {
             id: doctor.id,
             name: doctor.fullName,
             work_address: doctor.appointmentAddress,
             work_address_longitude: doctor.longitude,
             work_address_latitude: doctor.latitude,
-            profile_image: doctor.profileImage,
+            profile_image: doctor.profilePicture,
             specialization: doctor.specialization,
             bio: doctor.bio,
-            gmc_number: doctor.gmcNumber,
-            role: doctor.role,
-            email: doctor.email
+            gmc_number: doctor.gmcNumber || '',
+            role: doctor.role || 'Doctor',
+            email: doctor.email,
+            isVerified: doctor.isVerified,
+            availableSlotsCount: doctor.availableSlotsCount,
+            bookedSlotsCount: doctor.bookedSlotsCount,
+            totalSlotsCount: doctor.totalSlotsCount,
+            schedule: doctor.schedule || [] // Provide empty array as fallback
         };
-        
-        console.log(doctorDetails);
-        return doctorDetails;
 
-    }catch (err) {
+        return doctorDetails;
+    } catch(err) {
         throw err;
     }
 }
@@ -345,6 +354,80 @@ export async function bookAppointment(
     }
 }
 
+export async function fetchDoctorSchedules(doctorId: string, date?: string) {
+    try {
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get("access_token")?.value;
+
+        if (!accessToken) {
+            return null;
+        }
+
+        // If date is provided, get available slots for that specific date
+        const endpoint = date 
+            ? `${BASE_URL}/time-slots/doctor/${doctorId}/available?date=${date}`
+            : `${BASE_URL}/time-slots/doctor/${doctorId}`;
+
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error("Failed to fetch doctor schedules:", response.status, response.statusText);
+            return null;
+        }
+
+        const schedules = await response.json();
+        return schedules;
+    } catch (error) {
+        console.error("Error fetching doctor schedules:", error);
+        return null;
+    }
+}
+
+export async function fetchAvailableTimeSlots(doctorId: string, date: string) {
+    try {
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get("access_token")?.value;
+
+        if (!accessToken) {
+            console.error("No access token found");
+            return null;
+        }
+
+        const endpoint = `${BASE_URL}/time-slots/doctor/${doctorId}/available?date=${date}`;
+        console.log("Fetching available time slots from:", endpoint);
+
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        console.log("Response status:", response.status);
+        console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Failed to fetch available time slots:", response.status, response.statusText, errorText);
+            return null;
+        }
+
+        const timeSlots = await response.json();
+        console.log("Available time slots response:", timeSlots);
+        return timeSlots;
+    } catch (error) {
+        console.error("Error fetching available time slots:", error);
+        return null;
+    }
+}
+
 // Helper function to calculate distance between two coordinates
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371; // Radius of the Earth in kilometers
@@ -357,4 +440,41 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const distance = R * c; // Distance in kilometers
     return distance;
+}
+
+export async function updateUserProfile(profileData: Partial<User>) {
+    try {
+        const cookieStore = await cookies();
+        const accessToken = cookieStore.get("access_token")?.value;
+
+        if (!accessToken) {
+            throw new Error("No access token found");
+        }
+
+        console.log("Updating user profile with data:", profileData);
+
+        const response = await fetch(`${BASE_URL}/users/profile`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(profileData),
+        });
+
+        console.log("Update profile response status:", response.status);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Failed to update profile:", errorData);
+            throw new Error(errorData.message || 'Failed to update profile');
+        }
+
+        const updatedUser = await response.json();
+        console.log("Profile updated successfully:", updatedUser);
+        return updatedUser;
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
 }

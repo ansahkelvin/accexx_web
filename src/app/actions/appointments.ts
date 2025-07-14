@@ -60,12 +60,35 @@ export const updateAppointmentStatus = async (appointmentId: string, status: str
             },
         });
 
+        console.log("Appointment status update response status:", response.status);
+        console.log("Appointment status update response headers:", Object.fromEntries(response.headers.entries()));
+        
+        const responseText = await response.text();
+        console.log("Appointment status update response body:", responseText);
+        
         if (!response.ok) {
-            console.error("Failed to update appointment status:", response.status, response.statusText);
-            return { ok: false, error: `HTTP error: ${response.status}` };
+            let backendMsg = `HTTP error: ${response.status}`;
+            try {
+                const errorData = responseText ? JSON.parse(responseText) : null;
+                if (errorData && errorData.message) {
+                    backendMsg = errorData.message;
+                }
+            } catch (e) {
+                // ignore JSON parse error
+            }
+            console.error("Failed to update appointment status:", backendMsg);
+            return { ok: false, error: backendMsg };
         }
 
-        const data = await response.json();
+        // Try to parse JSON if response is not empty
+        let data;
+        try {
+            data = responseText ? JSON.parse(responseText) : null;
+        } catch (e) {
+            console.log("Response is not JSON, treating as success");
+            data = { message: "Status updated successfully" };
+        }
+        
         return { ok: true, data };
     } catch (err) {
         console.error("Error updating appointment status:", err);

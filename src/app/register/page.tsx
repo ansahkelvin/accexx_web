@@ -1,74 +1,143 @@
 'use client';
 
-import React from 'react';
-import { User, Phone, MapPin, Lock, Heart, Users, Activity, Shield } from 'lucide-react';
-import { useRegistrationForm } from '@/hooks/useRegistrationForm';
-import { Step } from '@/types/FormData';
+import React, { useState } from 'react';
+import { User, Phone, MapPin, Lock, Heart, Users, Activity, Shield, Mail, Calendar } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import PersonalDetailsStep from "@/components/steps/patients/PersonalDetailsStep";
-import ContactInfoStep from "@/components/steps/patients/ContactInfoStep";
-import LocationStep from "@/components/steps/patients/LocationStep";
-import SecurityStep from "@/components/steps/patients/SecurityStep";
+import { registerPatient } from "@/actions/auth";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-const RegistrationStepper: React.FC = () => {
-    const {
-        currentStep,
-        formData,
-        errors,
-        handleInputChange,
-        handleNext,
-        handlePrev,
-        handleSubmit
-    } = useRegistrationForm();
+interface RegistrationFormData {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    address: string;
+    dateOfBirth: string;
+}
 
-    const steps: Step[] = [
-        {
-            title: 'Personal Details',
-            icon: User,
-            description: 'Let\'s start with your basic information'
-        },
-        {
-            title: 'Contact Info',
-            icon: Phone,
-            description: 'How can we reach you?'
-        },
-        {
-            title: 'Location',
-            icon: MapPin,
-            description: 'Where are you located?'
-        },
-        {
-            title: 'Security',
-            icon: Lock,
-            description: 'Keep your account secure'
-        }
-    ];
+const RegistrationPage: React.FC = () => {
+    const [formData, setFormData] = useState<RegistrationFormData>({
+        fullName: '',
+        email: '',
+        phoneNumber: '',
+        password: '',
+        address: '',
+        dateOfBirth: ''
+    });
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const router = useRouter();
 
-    const renderError = (fieldName: string): React.ReactNode => {
-        if (errors[fieldName]) {
-            return (
-                <Alert variant="destructive" className="mt-2 border-none">
-                    <AlertDescription>{errors[fieldName]}</AlertDescription>
-                </Alert>
-            );
-        }
-        return null;
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
-    const stepProps = {
-        formData,
-        handleInputChange,
-        errors,
-        renderError
+    const validatePassword = (password: string): boolean => {
+        // At least 8 characters with uppercase, lowercase, number and special character
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        return passwordRegex.test(password);
     };
 
-    const renderStepContent = () => {
-        switch (currentStep) {
-            case 1: return <PersonalDetailsStep {...stepProps} />;
-            case 2: return <ContactInfoStep {...stepProps} />;
-            case 3: return <LocationStep {...stepProps} />;
-            case 4: return <SecurityStep {...stepProps} />;
-            default: return null;
+    const validatePhoneNumber = (phone: string): boolean => {
+        // Basic phone validation - allows + and digits
+        const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+        return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: { [key: string]: string } = {};
+
+        if (!formData.fullName.trim()) {
+            newErrors.fullName = 'Full name is required';
+        }
+
+        if (!formData.email) {
+            newErrors.email = 'Email is required';
+        } else if (!validateEmail(formData.email)) {
+            newErrors.email = 'Invalid email format';
+        }
+
+        if (!formData.phoneNumber) {
+            newErrors.phoneNumber = 'Phone number is required';
+        } else if (!validatePhoneNumber(formData.phoneNumber)) {
+            newErrors.phoneNumber = 'Invalid phone number format';
+        }
+
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+        } else if (!validatePassword(formData.password)) {
+            newErrors.password = 'Password must be at least 8 characters with uppercase, lowercase, number and special character';
+        }
+
+        if (!formData.address.trim()) {
+            newErrors.address = 'Address is required';
+        }
+
+        if (!formData.dateOfBirth) {
+            newErrors.dateOfBirth = 'Date of birth is required';
+        } else {
+            const birthDate = new Date(formData.dateOfBirth);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            if (age < 0 || age > 120) {
+                newErrors.dateOfBirth = 'Please enter a valid date of birth';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmissionError(null);
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // Create FormData object to match the existing registerPatient function
+            const submitFormData = new FormData();
+            submitFormData.append('fullName', formData.fullName);
+            submitFormData.append('email', formData.email);
+            submitFormData.append('phoneNumber', formData.phoneNumber);
+            submitFormData.append('password', formData.password);
+            submitFormData.append('address', formData.address);
+            submitFormData.append('dateOfBirth', formData.dateOfBirth);
+
+            const response = await registerPatient(submitFormData);
+            console.log('Registration successful:', response);
+
+            // Navigate to login page after successful registration
+            router.push('/login');
+        } catch (error) {
+            console.error('Registration error:', error);
+            setSubmissionError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -88,10 +157,10 @@ const RegistrationStepper: React.FC = () => {
 
                     <div className="max-w-md">
                         <h1 className="mb-2 sm:mb-4 text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
-                            Healthcare Made Simple
+                            Join Accexx 247
                         </h1>
                         <p className="text-base sm:text-lg xl:text-xl font-light text-white/90">
-                            Join our platform for better, faster, and more accessible healthcare services.
+                            Create your account to access quality healthcare services anytime, anywhere.
                         </p>
                     </div>
 
@@ -125,65 +194,179 @@ const RegistrationStepper: React.FC = () => {
 
             {/* Right Side - Form Section */}
             <div className="flex-1 bg-gray-50 px-4 py-6 sm:px-6 sm:py-8 lg:py-12">
-                <div className="mx-auto w-full max-w-2xl">
+                <div className="mx-auto w-full max-w-md">
                     <div className="mb-6 text-center">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Join Us</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Create Account</h2>
                         <p className="mt-2 text-sm text-gray-600">
-                            Complete your profile to get started
+                            Fill in your details to get started
                         </p>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl bg-white shadow-xl">
-                        {/* Stepper Header */}
-                        <div className="border-b border-gray-200 bg-gray-50 p-4 sm:px-6 lg:px-8">
-                            <div className="grid grid-cols-2 gap-4 sm:flex sm:items-center sm:justify-between">
-                                {steps.map((step, index) => (
-                                    <div key={step.title} className="flex flex-col items-center">
-                                        <div
-                                            className={`flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border-2 transition-colors duration-200 ${
-                                                currentStep > index + 1
-                                                    ? 'border-[#9871ff] bg-[#9871ff] text-white'
-                                                    : currentStep === index + 1
-                                                        ? 'border-[#9871ff] text-[#9871ff]'
-                                                        : 'border-gray-300 text-gray-300'
-                                            }`}
-                                        >
-                                            <step.icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                                        </div>
-                                        <p className="mt-2 text-xs sm:text-sm font-medium text-gray-700">{step.title}</p>
-                                        <p className="mt-1 text-xs text-gray-500 text-center hidden sm:block">{step.description}</p>
-                                    </div>
-                                ))}
+                    <div className="overflow-hidden rounded-xl bg-white shadow-xl p-6 sm:p-8">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Full Name */}
+                            <div className="space-y-2">
+                                <Label htmlFor="fullName" className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-gray-500" />
+                                    Full Name
+                                </Label>
+                                <Input
+                                    id="fullName"
+                                    name="fullName"
+                                    type="text"
+                                    placeholder="Enter your full name"
+                                    value={formData.fullName}
+                                    onChange={handleInputChange}
+                                    className={errors.fullName ? 'border-red-500' : ''}
+                                />
+                                {errors.fullName && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.fullName}</AlertDescription>
+                                    </Alert>
+                                )}
                             </div>
-                        </div>
 
-                        {/* Form Content */}
-                        <div className="p-4 sm:px-6 lg:px-8">
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {renderStepContent()}
+                            {/* Email */}
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4 text-gray-500" />
+                                    Email Address
+                                </Label>
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    className={errors.email ? 'border-red-500' : ''}
+                                />
+                                {errors.email && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.email}</AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
 
-                                {/* Navigation Buttons */}
-                                <div className="flex items-center justify-between pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={handlePrev}
-                                        className={`flex items-center rounded-lg px-4 sm:px-6 py-2 sm:py-3 text-sm font-medium transition-colors ${
-                                            currentStep === 1
-                                                ? 'invisible'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        Previous
-                                    </button>
-                                    <button
-                                        type={currentStep === steps.length ? 'submit' : 'button'}
-                                        onClick={currentStep === steps.length ? handleSubmit : handleNext}
-                                        className="flex items-center rounded-lg bg-[#9871ff] px-4 sm:px-6 py-2 sm:py-3 text-sm font-medium text-white transition-colors hover:bg-[#8b66ff]"
-                                    >
-                                        {currentStep === steps.length ? 'Complete' : 'Continue'}
-                                    </button>
-                                </div>
-                            </form>
+                            {/* Phone Number */}
+                            <div className="space-y-2">
+                                <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-gray-500" />
+                                    Phone Number
+                                </Label>
+                                <Input
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    placeholder="+1234567890"
+                                    value={formData.phoneNumber}
+                                    onChange={handleInputChange}
+                                    className={errors.phoneNumber ? 'border-red-500' : ''}
+                                />
+                                {errors.phoneNumber && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.phoneNumber}</AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Address */}
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-gray-500" />
+                                    Address
+                                </Label>
+                                <Input
+                                    id="address"
+                                    name="address"
+                                    type="text"
+                                    placeholder="Enter your address"
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                    className={errors.address ? 'border-red-500' : ''}
+                                />
+                                {errors.address && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.address}</AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Date of Birth */}
+                            <div className="space-y-2">
+                                <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-gray-500" />
+                                    Date of Birth
+                                </Label>
+                                <Input
+                                    id="dateOfBirth"
+                                    name="dateOfBirth"
+                                    type="date"
+                                    value={formData.dateOfBirth}
+                                    onChange={handleInputChange}
+                                    className={errors.dateOfBirth ? 'border-red-500' : ''}
+                                />
+                                {errors.dateOfBirth && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.dateOfBirth}</AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Password */}
+                            <div className="space-y-2">
+                                <Label htmlFor="password" className="flex items-center gap-2">
+                                    <Lock className="h-4 w-4 text-gray-500" />
+                                    Password
+                                </Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    placeholder="Create a secure password"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
+                                    className={errors.password ? 'border-red-500' : ''}
+                                />
+                                {errors.password && (
+                                    <Alert variant="destructive" className="border-none">
+                                        <AlertDescription>{errors.password}</AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+
+                            {/* Submit Button */}
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full bg-[#9871ff] hover:bg-[#8b66ff] text-white py-3"
+                            >
+                                {isSubmitting ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                        Creating Account...
+                                    </div>
+                                ) : (
+                                    'Create Account'
+                                )}
+                            </Button>
+
+                            {/* Error Message */}
+                            {submissionError && (
+                                <Alert variant="destructive" className="border-none">
+                                    <AlertDescription>{submissionError}</AlertDescription>
+                                </Alert>
+                            )}
+                        </form>
+
+                        {/* Login Link */}
+                        <div className="mt-6 text-center">
+                            <p className="text-sm text-gray-600">
+                                Already have an account?{' '}
+                                <Link href="/login" className="text-[#9871ff] hover:text-[#8b66ff] font-medium">
+                                    Sign in
+                                </Link>
+                            </p>
                         </div>
                     </div>
 
@@ -201,4 +384,4 @@ const RegistrationStepper: React.FC = () => {
     );
 };
 
-export default RegistrationStepper;
+export default RegistrationPage; 

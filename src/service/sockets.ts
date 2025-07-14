@@ -1,6 +1,7 @@
 "use client"
 
 import { WebSocketMessage } from '@/types/chats';
+import { WS_URL } from '@/config/config';
 
 class ChatWebSocketService {
     private socket: WebSocket | null = null;
@@ -20,7 +21,7 @@ class ChatWebSocketService {
     }
 
     /**
-     * Connect to a chat WebSocket
+     * Connect to the chat WebSocket using the new API structure
      * @param chatId The chat ID to connect to
      * @param token Authentication token (starts with "Bearer ")
      */
@@ -29,6 +30,7 @@ class ChatWebSocketService {
         const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
 
         if (this.socket && this.chatId === chatId && this.socket.readyState === WebSocket.OPEN) {
+            console.log('Already connected to this chat');
             return;
         }
 
@@ -38,46 +40,106 @@ class ChatWebSocketService {
         // Store the chat ID
         this.chatId = chatId;
 
-        // Create WebSocket URL
-        // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // const host = process.env.NEXT_PUBLIC_API_URL || window.location.host;
-        const wsUrl = `wss://accexx247.com/backend/api/ws/chats/${chatId}?token=${cleanToken}`;
+        // Try different WebSocket endpoints - without /api prefix
+        const endpoints = [
+            '/chat',  // From Flutter guide
+            '/ws/chat',
+            '/ws',
+            '/socket/chat',
+            '/socket'
+        ];
+
+        console.log('Trying WebSocket endpoints...');
+        console.log('Base WebSocket URL:', WS_URL);
         
-        // Create new WebSocket
-        this.socket = new WebSocket(wsUrl);
+        for (const endpoint of endpoints) {
+            this.tryConnect(endpoint, cleanToken, chatId);
+        }
+    }
 
-        // Setup event handlers
-        this.socket.onopen = () => {
-            console.log('WebSocket connection established');
-            this.reconnectAttempts = 0;
-            this.clearReconnectInterval();
-            this.notifyConnectionHandlers(true);
-        };
+    private tryConnect(endpoint: string, token: string, chatId: string): void {
+        const wsUrl = `${WS_URL}${endpoint}?token=${token}`;
+        console.log(`Trying endpoint: ${wsUrl}`);
+        
+        try {
+            const testSocket = new WebSocket(wsUrl);
+            
+            testSocket.onopen = () => {
+                console.log(`✅ SUCCESS with endpoint: ${endpoint}`);
+                // Close the test socket and create the real one
+                testSocket.close();
+                this.createRealConnection(endpoint, token, chatId);
+            };
+            
+            testSocket.onerror = () => {
+                console.log(`❌ Failed with endpoint: ${endpoint}`);
+            };
+            
+            // Close after 2 seconds if not successful
+            setTimeout(() => {
+                if (testSocket.readyState === WebSocket.CONNECTING) {
+                    testSocket.close();
+                }
+            }, 2000);
+            
+        } catch (error) {
+            console.error(`Error testing endpoint ${endpoint}:`, error);
+        }
+    }
 
-        this.socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data) as WebSocketMessage;
-                this.notifyMessageHandlers(data);
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
-                this.notifyErrorHandlers('Error parsing message');
-            }
-        };
+    private createRealConnection(endpoint: string, token: string, chatId: string): void {
+        const wsUrl = `${WS_URL}${endpoint}?token=${token}`;
+        console.log('Creating real WebSocket connection:', wsUrl);
+        console.log('Chat ID:', chatId);
+        console.log('Token length:', token.length);
+        
+        try {
+            // Create new WebSocket
+            this.socket = new WebSocket(wsUrl);
 
-        this.socket.onclose = (event) => {
-            console.log('WebSocket connection closed', event.code, event.reason);
-            this.notifyConnectionHandlers(false);
+            // Setup event handlers
+            this.socket.onopen = () => {
+                console.log('WebSocket connection established successfully');
+                this.reconnectAttempts = 0;
+                this.clearReconnectInterval();
+                this.notifyConnectionHandlers(true);
+            };
 
-            // Try to reconnect on abnormal closure
-            if (event.code !== 1000 && this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
-                this.attemptReconnect();
-            }
-        };
+            this.socket.onmessage = (event) => {
+                console.log('WebSocket message received:', event.data);
+                try {
+                    const data = JSON.parse(event.data) as WebSocketMessage;
+                    this.notifyMessageHandlers(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                    this.notifyErrorHandlers('Error parsing message');
+                }
+            };
 
-        this.socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            this.notifyErrorHandlers('Connection error');
-        };
+            this.socket.onclose = (event) => {
+                console.log('WebSocket connection closed', {
+                    code: event.code,
+                    reason: event.reason,
+                    wasClean: event.wasClean
+                });
+                this.notifyConnectionHandlers(false);
+
+                // Try to reconnect on abnormal closure
+                if (event.code !== 1000 && this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+                    this.attemptReconnect();
+                }
+            };
+
+            this.socket.onerror = (error) => {
+                console.error('WebSocket error occurred:', error);
+                console.error('WebSocket readyState:', this.socket?.readyState);
+                console.error('WebSocket URL:', wsUrl);
+                this.notifyErrorHandlers('Connection error - check console for details');
+            };
+        } catch (error) {
+            console.error('Error creating WebSocket connection:', error);
+            this.notifyErrorHandlers('Failed to create WebSocket connection');
+        }
     }
 
     /**
@@ -87,6 +149,7 @@ class ChatWebSocketService {
         this.clearReconnectInterval();
 
         if (this.socket) {
+            console.log('Disconnecting WebSocket');
             // Remove all event handlers to prevent memory leaks
             this.socket.onopen = null;
             this.socket.onmessage = null;
@@ -140,18 +203,26 @@ class ChatWebSocketService {
     }
 
     /**
-     * Send a message to the current chat
+     * Send a message to the current chat using the new API format
      * @param content Message content
      * @returns Whether the message was sent successfully
      */
     sendMessage(content: string): boolean {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('Cannot send message - WebSocket not connected');
+            console.error('Socket state:', this.socket?.readyState);
             this.notifyErrorHandlers('Not connected');
             return false;
         }
 
         try {
-            const messageData = { content };
+            // Use the new message format from the Flutter guide
+            const messageData = {
+                chatId: this.chatId,
+                content: content,
+                senderType: 'DOCTOR' // For doctor's interface
+            };
+            console.log('Sending WebSocket message:', messageData);
             this.socket.send(JSON.stringify(messageData));
             return true;
         } catch (error) {

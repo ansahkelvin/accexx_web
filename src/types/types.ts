@@ -1,11 +1,17 @@
 export interface User {
     id: string;
     email: string;
-    address: string;
-    latitude: number;  // Changed from string to number
-    longitude: number; // Changed from string to number
-    name: string;
-    profile_image: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    name?: string;
+    fullName?: string;
+    phoneNumber?: string;
+    isEmailVerified?: boolean;
+    dateOfBirth?: string;
+    profile_image?: string;
+    profilePicture?: string;
+    profileImage?: string;
 }
 
 export interface Document {
@@ -24,6 +30,10 @@ export interface Doctor {
     id: string;
     name: string;
     profile_image: string;
+    // New API response structure
+    fullName?: string;
+    specialization?: string;
+    profilePicture?: string;
 }
 
 export interface Appointment {
@@ -41,6 +51,33 @@ export interface Appointment {
     appointment_location: string;
 }
 
+// New API response structure for upcoming appointments
+export interface NewUpcomingAppointment {
+    id: string;
+    user: {
+        id: string;
+        fullName: string;
+        phoneNumber: string;
+    };
+    doctor: {
+        id: string;
+        fullName: string;
+        specialization: string;
+        profilePicture: string;
+    };
+    timeSlot: {
+        id: string;
+        date: string;
+        startTime: string;
+        endTime: string;
+        durationMinutes: number;
+    };
+    appointmentDateTime: string;
+    notes: string;
+    status: "CONFIRMED" | "COMPLETED" | "PENDING" | "CANCELLED";
+    canCancel: boolean;
+}
+
 export interface UpcomingAppointment {
     appointment_id: string;
     appointment_time: string;
@@ -50,10 +87,10 @@ export interface UpcomingAppointment {
 }
 
 export interface DashboardData {
-    latest_appointment: Appointment;
+    latest_appointment: (Appointment | NewUpcomingAppointment) | null;
     appointment_count: number;
     file_counts: number;
-    upcoming_appointments: UpcomingAppointment[]; // Corrected type to match API response
+    upcoming_appointments: (UpcomingAppointment | NewUpcomingAppointment)[]; // Support both old and new API responses
     recent_documents: Document[];
 }
 
@@ -95,11 +132,16 @@ export interface DoctorDetails {
     work_address_latitude: number;
     profile_image: string;
     specialization: string;
-    rating: number;
-    avg_rating: number;
-    rating_count: number;
     bio: string;
-    schedule: Schedule[];
+    gmc_number: string;
+    role: string;
+    email: string;
+    phoneNumber?: string;
+    isVerified?: boolean;
+    availableSlotsCount?: number;
+    bookedSlotsCount?: number;
+    totalSlotsCount?: number;
+    schedule?: Schedule[];
 }
 
 
@@ -184,19 +226,5 @@ export interface SidebarProps {
 
 export interface SidebarProviderProps {
     children: ReactNode;
-}
-
-export interface DoctorDetails {
-    id: string;
-    name: string;
-    work_address: string;
-    work_address_longitude: number;
-    work_address_latitude: number;
-    profile_image: string;
-    specialization: string;
-    bio: string;
-    gmc_number: string;
-    role: string;
-    email: string;
 }
 

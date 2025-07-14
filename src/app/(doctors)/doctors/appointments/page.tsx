@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import {  Check, X, Video, MapPin, MessageCircle } from "lucide-react";
-import { DoctorAppointment, fetchAppointments } from "@/service/doctors/doctor";
+import { fetchAppointments } from "@/service/doctors/doctor";
+import { DoctorAppointmentResponse } from "@/types/doctor";
 import { useRouter } from "next/navigation";
-import { createChat } from "@/app/actions/chat";
 import { updateAppointmentStatus } from "@/app/actions/appointments";
 
 // Skeleton Row Component
@@ -78,10 +78,10 @@ const ConfirmationModal = ({
 
 export default function AppointmentsPage() {
     const router = useRouter();
-    const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
+    const [appointments, setAppointments] = useState<DoctorAppointmentResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedAppointment, setSelectedAppointment] = useState<DoctorAppointment | null>(null);
-    const [modalType, setModalType] = useState<'confirm' | 'cancel' | 'chat' | null>(null);
+    const [selectedAppointment, setSelectedAppointment] = useState<DoctorAppointmentResponse | null>(null);
+    const [modalType, setModalType] = useState<'confirm' | 'cancel' | null>(null);
 
     useEffect(() => {
         const loadAppointments = async () => {
@@ -98,42 +98,12 @@ export default function AppointmentsPage() {
         loadAppointments();
     }, []);
 
-    // Get appropriate icon for appointment type
-    const getTypeIcon = (appointment: DoctorAppointment) => {
-        switch (appointment.appointment_type) {
-            case "Virtual":
-                return <Video size={16} className="text-blue-500" />;
-            default:
-                return <MapPin size={16} className="text-red-500" />;
-        }
-    };
-
-    // Handle chat creation
-    const handleCreateChat = async () => {
-        if (!selectedAppointment) return;
-
-        const chatRequest = {
-            patient_id: selectedAppointment.patient_id,
-            doctor_id: selectedAppointment.doctor_id,
-            appointment_id: selectedAppointment.id,
-        };
-
-        setIsLoading(true);
-        try {
-            if (!chatRequest.patient_id || !chatRequest.doctor_id || !chatRequest.appointment_id) {
-                throw new Error("Missing required information");
-            }
-
-            await createChat(chatRequest);
-            router.push("/doctors/inbox");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to start chat. Please try again.");
-        } finally {
-            setIsLoading(false);
-            setModalType(null);
-            setSelectedAppointment(null);
-        }
+    // Get appropriate icon for appointment type (based on timeSlot properties)
+    const getTypeIcon = (appointment: DoctorAppointmentResponse) => {
+        // You would need to check if the timeSlot has virtual meeting properties
+        // For now, assuming if there's a meeting link or similar property
+        const isVirtual = appointment.timeSlot.startTime && appointment.timeSlot.endTime;
+        return isVirtual ? <Video size={16} className="text-blue-500" /> : <MapPin size={16} className="text-red-500" />;
     };
 
     // Mark appointment as confirmed or canceled
@@ -142,21 +112,25 @@ export default function AppointmentsPage() {
 
         setIsLoading(true);
         try {
+            console.log("Updating appointment status:", selectedAppointment.id, status);
             const response = await updateAppointmentStatus(
                 selectedAppointment.id,
                 status,
-                selectedAppointment.schedule_id
+                selectedAppointment.timeSlot.id
             );
+            console.log("Update appointment status response:", response);
 
             if (!response.ok) {
-                throw new Error("Failed to update appointment status");
+                console.error("Update appointment status failed:", response.error);
+                throw new Error(response.error || "Failed to update appointment status");
             }
 
+            console.log("Appointment status updated successfully");
             // Refresh appointments
             const updatedAppointments = await fetchAppointments();
             setAppointments(updatedAppointments || []);
         } catch (error) {
-            console.error(error);
+            console.error("Error updating appointment status:", error);
             alert("Failed to update appointment status. Please try again.");
         } finally {
             setIsLoading(false);
@@ -166,7 +140,7 @@ export default function AppointmentsPage() {
     };
 
     // Open modal for specific action
-    const openModal = (appointment: DoctorAppointment, type: 'confirm' | 'cancel' | 'chat') => {
+    const openModal = (appointment: DoctorAppointmentResponse, type: 'confirm' | 'cancel') => {
         setSelectedAppointment(appointment);
         setModalType(type);
     };
@@ -175,6 +149,12 @@ export default function AppointmentsPage() {
     const closeModal = () => {
         setModalType(null);
         setSelectedAppointment(null);
+    };
+
+    // Format date and time
+    const formatDateTime = (dateTimeString: string) => {
+        const date = new Date(dateTimeString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     return (
@@ -192,20 +172,15 @@ export default function AppointmentsPage() {
                             case 'cancel':
                                 changeAppointmentStatus('CANCELED');
                                 break;
-                            case 'chat':
-                                handleCreateChat();
-                                break;
                         }
                     }}
                     title={
                         modalType === 'confirm' ? "Confirm Appointment" :
-                            modalType === 'cancel' ? "Cancel Appointment" :
-                                "Start Chat"
+                            "Cancel Appointment"
                     }
                     message={
-                        modalType === 'confirm' ? `Are you sure you want to confirm the appointment with ${selectedAppointment.patient_name}?` :
-                            modalType === 'cancel' ? `Are you sure you want to cancel the appointment with ${selectedAppointment.patient_name}?` :
-                                `Do you want to start a chat with ${selectedAppointment.patient_name}?`
+                        modalType === 'confirm' ? `Are you sure you want to confirm the appointment with ${selectedAppointment.user.fullName}?` :
+                            `Are you sure you want to cancel the appointment with ${selectedAppointment.user.fullName}?`
                     }
                 />
             )}
@@ -219,7 +194,7 @@ export default function AppointmentsPage() {
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -235,74 +210,76 @@ export default function AppointmentsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="flex-shrink-0 h-10 w-10">
-                                                <img
-                                                    className="h-10 w-10 rounded-full"
-                                                    src={appointment.patient_image_url || '/default-avatar.png'}
-                                                    alt={appointment.patient_name}
-                                                />
+                                                <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
+                                                    {appointment.user.fullName.charAt(0)}
+                                                </div>
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900">{appointment.patient_name}</div>
+                                                <div className="text-sm font-medium text-gray-900">{appointment.user.fullName}</div>
+                                                <div className="text-sm text-gray-500">{appointment.user.phoneNumber}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-500">
-                                            {new Date(appointment.appointment_time).toLocaleString()}
+                                            {formatDateTime(appointment.appointmentDateTime)}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm text-gray-500">{appointment.reason || 'No reason provided'}</div>
+                                        <div className="text-sm text-gray-900">{appointment.notes || 'No notes'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center space-x-2">
-                                            {getTypeIcon(appointment)}
-                                            <span className="text-sm text-gray-500">{appointment.appointment_type}</span>
+                                        <div className="text-sm text-gray-500">
+                                            {appointment.timeSlot.durationMinutes} min
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
-                                                    appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                            }`}>
-                                                {appointment.status}
-                                            </span>
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            appointment.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                                            appointment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                            appointment.status === 'CANCELED' ? 'bg-red-100 text-red-800' :
+                                            appointment.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-gray-100 text-gray-800'
+                                        }`}>
+                                            {appointment.status}
+                                        </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <div className="flex space-x-2">
-                                            {appointment.status === 'Pending' && (
+                                            {appointment.status === 'PENDING' && (
                                                 <>
                                                     <button
                                                         onClick={() => openModal(appointment, 'confirm')}
-                                                        className="text-green-600 hover:text-green-900"
-                                                        title="Confirm Appointment"
+                                                        className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition"
+                                                        title="Confirm"
                                                     >
-                                                        <Check className="h-5 w-5" />
+                                                        <Check size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => openModal(appointment, 'cancel')}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        title="Cancel Appointment"
+                                                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition"
+                                                        title="Cancel"
                                                     >
-                                                        <X className="h-5 w-5" />
+                                                        <X size={16} />
                                                     </button>
                                                 </>
                                             )}
-                                            <button
-                                                onClick={() => openModal(appointment, 'chat')}
-                                                className="text-purple-600 hover:text-purple-900"
-                                                title="Start Chat"
-                                            >
-                                                <MessageCircle className="h-5 w-5" />
-                                            </button>
+                                            {appointment.canCancel && appointment.status !== 'CANCELED' && appointment.status !== 'COMPLETED' && (
+                                                <button
+                                                    onClick={() => openModal(appointment, 'cancel')}
+                                                    className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition"
+                                                    title="Cancel"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="text-center py-8 text-gray-500">
+                                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                                     No appointments found
                                 </td>
                             </tr>

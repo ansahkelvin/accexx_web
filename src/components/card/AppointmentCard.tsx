@@ -1,7 +1,6 @@
 import { Home, MapPin, Video, Star, CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { createChat } from "@/app/actions/chat";
 import React, { useState } from "react";
 import {
     Dialog,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { createReviewData, updateAppointmentStatus } from "@/app/actions/appointments";
+import { toast } from "@/hooks/use-toast";
 
 interface Appointment {
     id: string;
@@ -67,12 +67,6 @@ export default function AppointmentCard({
 
     const daysUntil = getDaysUntil(appointment.appointment_time);
 
-    const chatRequest = {
-        patient_id: appointment.patient_id,
-        doctor_id: appointment.doctor_id,
-        appointment_id: appointment.id,
-    };
-
     // Get appropriate icon for appointment type
     const getTypeIcon = () => {
         switch (appointment.appointment_type) {
@@ -85,42 +79,26 @@ export default function AppointmentCard({
         }
     };
 
-    // Handle chat creation
-    const handleCreateChat = async () => {
-        if (isLoading) return;
-
-        setIsLoading(true);
-        try {
-            if (!chatRequest.patient_id || !chatRequest.doctor_id || !chatRequest.appointment_id) {
-                throw new Error("Missing required information");
-            }
-
-            await createChat(chatRequest);
-            router.push("/patients/inbox");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to start chat. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     // Mark appointment as completed
     const changeAppointmentStatus = async (status: string) => {
         if (isLoading) return;
 
         setIsLoading(true);
         try {
+            console.log("Updating appointment status:", appointment.id, status);
             const response = await updateAppointmentStatus(appointment.id, status, appointment.schedule_id);
+            console.log("Update appointment status response:", response);
 
             if (!response.ok) {
-                throw new Error("Failed to update appointment status");
+                console.error("Update appointment status failed:", response.error);
+                throw new Error(response.error || "Failed to update appointment status");
             }
 
+            console.log("Appointment status updated successfully");
             // Force a hard refresh to ensure data is updated
             window.location.href = "/patients/appointments";
         } catch (error) {
-            console.error(error);
+            console.error("Error updating appointment status:", error);
             alert("Failed to update appointment status. Please try again.");
         } finally {
             setIsLoading(false);
@@ -252,21 +230,12 @@ export default function AppointmentCard({
                                 Join Meeting
                             </a>
                         ) : (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleCreateChat}
-                                    disabled={isLoading}
-                                    className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs"
-                                >
-                                    Chat
-                                </Button>
-                                <Button
-                                    onClick={() => setIsCancelOpen(true)}
-                                    className="w-full flex-1 px-3 py-1.5 bg-red-600 rounded-md hover:bg-indigo-100 text-xs"
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={() => setIsCancelOpen(true)}
+                                className="w-full px-3 py-1.5 bg-red-600 rounded-md hover:bg-indigo-100 text-xs"
+                            >
+                                Cancel
+                            </Button>
                         ))}
 
                     {/* Review button for past appointments with Completed status */}
@@ -400,8 +369,13 @@ export default function AppointmentCard({
                         </Button>
                         <Button
                             onClick={async () => {
-                                await changeAppointmentStatus("CANCELED");
-                                setIsCancelOpen(false);
+                                try {
+                                    await changeAppointmentStatus("CANCELED");
+                                    setIsCancelOpen(false);
+                                } catch (error: any) {
+                                    const backendMsg = error?.message || error?.toString() || "Failed to cancel appointment.";
+                                    toast({ title: "Unable to cancel appointment", description: backendMsg, variant: "destructive" });
+                                }
                             }}
                             className="bg-red-600 hover:bg-red-700 text-white"
                             disabled={isLoading}

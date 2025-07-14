@@ -10,8 +10,6 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { createChat } from "@/app/actions/chat";
 
 // Type definition for appointment data
 interface Appointment {
@@ -148,51 +146,9 @@ export default function GroupedAppointmentCard({
         router.push(`/patients/doctors/${doctor_id}`);
     };
 
-    // Handle chat creation and navigation to inbox
-    const handleCreateChat = async () => {
-        if (isLoading) return;
+  
 
-        setIsLoading(true);
-        try {
-            if (!chatRequest.patient_id || !chatRequest.doctor_id || !chatRequest.appointment_id) {
-                throw new Error("Missing required information");
-            }
-
-            await createChat(chatRequest);
-            router.push("/patients/inbox");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to start chat. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Handle chat creation for a specific appointment
-    const handleCreateAppointmentChat = async (appointment: Appointment) => {
-        if (isLoading) return;
-
-        setIsLoading(true);
-        try {
-            const appointmentChatRequest = {
-                patient_id: appointment.patient_id,
-                doctor_id: appointment.doctor_id,
-                appointment_id: appointment.id,
-            };
-
-            if (!appointmentChatRequest.patient_id || !appointmentChatRequest.doctor_id || !appointmentChatRequest.appointment_id) {
-                throw new Error("Missing required information");
-            }
-
-            await createChat(appointmentChatRequest);
-            router.push("/patients/inbox");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to start chat. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+   
 
     // Handle opening the review dialog
     const handleOpenReview = (appointment: Appointment) => {
@@ -349,17 +305,7 @@ export default function GroupedAppointmentCard({
                 {/* Action buttons - always at the bottom */}
                 <div className="pt-3 mt-auto border-t border-gray-100">
                     <div className="flex gap-2">
-                        <Button
-                            onClick={handleCreateChat}
-                            disabled={isLoading}
-                            className="flex-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100">
-                            {isLoading ? (
-                                <>
-                                    <Loader2 size={14} className="animate-spin mr-1" />
-                                    Connecting...
-                                </>
-                            ) : "Chat with Doctor"}
-                        </Button>
+                       
                         {!isPast && (
                             <Button
                                 onClick={handleNavigateToDoctorDetails}
@@ -436,17 +382,7 @@ export default function GroupedAppointmentCard({
                                                 </a>
                                             ) : (
                                                 <>
-                                                    <Button
-                                                        onClick={() => handleCreateAppointmentChat(appointment)}
-                                                        disabled={isLoading}
-                                                        className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md text-xs">
-                                                        {isLoading ? (
-                                                            <>
-                                                                <Loader2 size={14} className="animate-spin mr-1" />
-                                                                Connecting...
-                                                            </>
-                                                        ) : "Chat"}
-                                                    </Button>
+                                                 
                                                     <Button
                                                         onClick={() => handleOpenCancel(appointment)}
                                                         className="flex-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-xs"
@@ -458,25 +394,7 @@ export default function GroupedAppointmentCard({
                                         </>
                                     )}
 
-                                    {/* Review button for past appointments with Completed status */}
-                                    {isPast && appointment.status === "Completed" && !appointment.has_review && (
-                                        <Button
-                                            onClick={() => handleOpenReview(appointment)}
-                                            className="flex-1 px-3 py-1.5 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded-md text-xs flex items-center justify-center gap-1"
-                                        >
-                                            <Star size={14} />
-                                            Leave a Review
-                                        </Button>
-                                    )}
-
-                                    {/* Already reviewed indicator */}
-                                    {isPast && appointment.status === "Completed" && appointment.has_review && (
-                                        <div className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-xs flex items-center justify-center gap-1">
-                                            <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                                            Review Submitted
-                                        </div>
-                                    )}
-
+                                 
                                     {/* Mark as completed button for past appointments with Pending or Confirmed status */}
                                     {isPast && (appointment.status === "Pending" || appointment.status === "Confirmed") && (
                                         <Button
@@ -506,78 +424,6 @@ export default function GroupedAppointmentCard({
                 </DialogContent>
             </Dialog>
 
-            {/* Review Dialog */}
-            <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Rate your experience with {doctor_name}</DialogTitle>
-                        <DialogDescription>
-                            Your feedback helps other patients find the right care.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-4">
-                        {/* Star Rating */}
-                        <div className="flex justify-center mb-4">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setRating(star)}
-                                    onMouseEnter={() => setHoverRating(star)}
-                                    onMouseLeave={() => setHoverRating(0)}
-                                    className="p-1"
-                                >
-                                    <Star
-                                        size={32}
-                                        className={`transition-colors ${
-                                            star <= (hoverRating || rating)
-                                                ? "text-yellow-400 fill-yellow-400"
-                                                : "text-gray-300"
-                                        }`}
-                                    />
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Review Text */}
-                        <Textarea
-                            placeholder="Share your experience with the doctor..."
-                            value={review}
-                            onChange={(e) => setReview(e.target.value)}
-                            className="w-full min-h-24"
-                        />
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsReviewOpen(false)}
-                            className="mr-2"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSubmitReview}
-                            disabled={isSubmitting || rating === 0}
-                            className={`${
-                                rating === 0
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-purple-600 hover:bg-purple-700"
-                            } text-white`}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 size={14} className="animate-spin mr-1" />
-                                    Submitting...
-                                </>
-                            ) : (
-                                "Submit Review"
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Cancel Confirmation Dialog */}
             <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>

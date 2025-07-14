@@ -189,12 +189,16 @@ export async function registerPatient(formData: FormData) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            console.error("Registration failed:", response.status, errorData);
-            throw new Error(errorData?.message || `Registration failed with status: ${response.status}`);
+            const errorText = await response.text();
+            console.error("Registration failed:", response.status, errorText);
+            throw new Error(`Registration failed: ${errorText}`);
         }
 
-        return await response.json();
+        // Handle text response instead of JSON
+        const responseText = await response.text();
+        console.log('Registration successful:', responseText);
+        
+        return { success: true, message: responseText };
 
     } catch (error) {
         console.error('Registration error:', error);
@@ -203,40 +207,27 @@ export async function registerPatient(formData: FormData) {
 }
 
 export async function registerDoctor(formData: FormData) {
-    try{
-        const doctorData = {
-            fullName: formData.get('fullName') as string,
-            email: formData.get('email') as string,
-            phoneNumber: formData.get('phoneNumber') as string,
-            password: formData.get('password') as string,
-            address: formData.get('address') as string,
-            dateOfBirth: formData.get('dateOfBirth') as string,
-            appointmentAddress: formData.get('appointmentAddress') as string,
-            latitude: parseFloat(formData.get('latitude') as string),
-            longitude: parseFloat(formData.get('longitude') as string),
-            bio: formData.get('bio') as string,
-            specialization: formData.get('specialization') as string,
-            gmcNumber: formData.get('gmcNumber') as string,
-            profileImage: formData.get('profileImage') as string,
-        };
-
+    try {
+        // Don't set Content-Type header - let the browser set it with boundary for multipart/form-data
         const response = await fetch(`${BASE_URL}/auth/doctor/register`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(doctorData),
+            body: formData, // Send FormData directly for multipart/form-data
         });
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            console.error("Registration failed:", response.status, errorData);
-            throw new Error(errorData?.message || `Registration failed with status: ${response.status}`);
+            const errorText = await response.text();
+            console.error("Registration failed:", response.status, errorText);
+            throw new Error(`Registration failed: ${errorText}`);
         }
-        return await response.json();
+
+        // Handle text response instead of JSON
+        const responseText = await response.text();
+        console.log('Doctor registration successful:', responseText);
+        
+        return { success: true, message: responseText };
 
     } catch (error) {
-        console.log(error);
+        console.error('Doctor registration error:', error);
         throw error;
     }
 }

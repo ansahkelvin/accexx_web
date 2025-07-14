@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Bell, Search } from "lucide-react";
+import {  Search } from "lucide-react";
 import ProfileAvatar from "@/components/navigation/avatar";
 import {fetchUserPatientDetails} from "@/app/actions/user";
 import {redirect} from "next/navigation";
@@ -26,12 +26,7 @@ export default async function Navbar() {
             </div>
 
             <div className="flex items-center space-x-4">
-                <div className="relative">
-                    <Bell className="h-6 w-6 text-gray-600 cursor-pointer" />
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                        2
-                    </span>
-                </div>
+               
                 <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
                 <ProfileAvatar user={user} />
             </div>

@@ -6,7 +6,6 @@ import {
     Calendar,
     Users,
     MessageSquare,
-    FileText,
     Settings
 } from "lucide-react";
 import React from "react";
@@ -44,11 +43,6 @@ export default function SidebarLinks({ isCollapsed = false }: SidebarLinksProps)
             title: "Inbox",
             href: "/patients/inbox",
             icon: <MessageSquare className="w-5 h-5" />,
-        },
-        {
-            title: "Evidence",
-            href: "/patients/evidence",
-            icon: <FileText className="w-5 h-5" />,
         },
         {
             title: "Settings",
